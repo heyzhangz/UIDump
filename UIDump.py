@@ -75,7 +75,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     device.startApp(pacname)
     # 等待启动之后再轮询判断是否已经退出
     time.sleep(1)
-    geteventpid = ReranOpt.startRecord(outputpath)
+    geteventpid = ReranOpt.startRecord(outputpath, device.getDeviceModel())
     while True:
         if device.getCurrentPackage() != pacname:
             device.stopApp(pacname)
