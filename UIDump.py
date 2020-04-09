@@ -113,6 +113,8 @@ def replayOpt(pacname="", interval=1, replyfile="", outputpath=""):
 
         time.sleep(interval)
 
+    print("the output saves in " + outputpath)
+
     pass
 
 
