@@ -69,18 +69,18 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     from DeviceConnect import device
     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
     if outputpath == "":
-        outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + "\\"
+        outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + os.sep
 
     print("record the sequence of operations")
     device.startApp(pacname)
-    ReranOpt.startRecord(outputpath)
+    geteventpid = ReranOpt.startRecord(outputpath)
     while True:
         if device.getCurrentPackage() != pacname:
             print(pacname + "is canceled, stop record")
             break
 
         time.sleep(interval)
-    ReranOpt.endRecord(outputpath)
+    ReranOpt.endRecord(outputpath, geteventpid)
 
     time.sleep(1)
     print("replay and dump the UI")
@@ -98,7 +98,7 @@ def replayOpt(pacname="", interval=1, replayfile="", outputpath=""):
     from DeviceConnect import device
     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
     if outputpath == "":
-        outputpath = REPLAY_ROOT_PATH + pacname + "_" + timestamp + "\\"
+        outputpath = REPLAY_ROOT_PATH + pacname + "_" + timestamp + os.sep
     dumpcount = 1
 
     device.startApp(pacname)

@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import time
 
@@ -11,13 +12,13 @@ def startRecord(outputdir):
     cmd = "adb shell getevent -tt > " + filepath + " &"
     subprocess.Popen(cmd, shell=True)
 
-    pass
-
-
-def endRecord(outputdir):
-
-    # 杀进程
     pid = subprocess.getoutput("adb shell pgrep -f getevent")
+    return re.split("[\\s\r\n]", pid.strip())[-1]
+
+
+def endRecord(outputdir, pid):
+    # 杀进程
+    print("adb kill the ps " + pid)
     subprocess.Popen("adb shell kill " + pid)
 
     # 转换脚本
