@@ -76,13 +76,14 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     geteventpid = ReranOpt.startRecord(outputpath)
     while True:
         if device.getCurrentPackage() != pacname:
+            device.stopApp(pacname)
             print(pacname + "is canceled, stop record")
             break
 
         time.sleep(interval)
     ReranOpt.endRecord(outputpath, geteventpid)
 
-    time.sleep(1)
+    time.sleep(5)
     print("replay and dump the UI")
     replayOpt(pacname, interval, outputpath + "replayscript.txt", outputpath)
 
@@ -102,10 +103,12 @@ def replayOpt(pacname="", interval=1, replayfile="", outputpath=""):
     dumpcount = 1
 
     device.startApp(pacname)
-    time.sleep(1)  # 有时候app界面还没加载出来，等1s
+    time.sleep(10)  # 有时候app界面还没加载出来，等1s
+    # 需要处理splash广告。。得多等一会儿
     ReranOpt.startReplay(replayfile)
     while True:
         if device.getCurrentPackage() != pacname:
+            device.stopApp(pacname)
             print(pacname + "is canceled, stop replay")
             break
         device.dumpUI(outputpath, dumpcount)
