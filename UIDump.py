@@ -23,7 +23,7 @@ def startUIDump(argv):
         sys.exit(2)
 
     recordmode = True
-    replyfile = ""
+    replayfile = ""
     for opt, arg in opts:
         if opt == '-h':
             printUseMethod()
@@ -32,13 +32,13 @@ def startUIDump(argv):
             PACKAGE_NAME = arg
         elif opt in ("-t", "--interval"):
             DUMP_INTERVAL = int(arg)
-        elif opt in ("-r", "--reply"):
+        elif opt in ("-r", "--replay"):
             recordmode = False
             if not os.path.exists(arg):
                 print("no such file " + arg)
                 sys.exit(1)
             else:
-                replyfile = arg
+                replayfile = arg
         else:
             print("err args : " + arg)
             printUseMethod()
@@ -54,8 +54,8 @@ def startUIDump(argv):
         recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
     else:
         print("start replay mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " +
-              str(DUMP_INTERVAL) + " with reply file " + replyfile)
-        replayOpt(PACKAGE_NAME, DUMP_INTERVAL, replyfile)
+              str(DUMP_INTERVAL) + " with replay file " + replayfile)
+        replayOpt(PACKAGE_NAME, DUMP_INTERVAL, replayfile)
 
     pass
 
@@ -84,12 +84,12 @@ def recordOpt(pacname="", interval=1, outputpath=""):
 
     time.sleep(1)
     print("replay and dump the UI")
-    replayOpt(pacname, interval, outputpath + "replyscript.txt", outputpath)
+    replayOpt(pacname, interval, outputpath + "replayscript.txt", outputpath)
 
     pass
 
 
-def replayOpt(pacname="", interval=1, replyfile="", outputpath=""):
+def replayOpt(pacname="", interval=1, replayfile="", outputpath=""):
 
     if pacname == "":
         print("no package name")
@@ -103,7 +103,7 @@ def replayOpt(pacname="", interval=1, replyfile="", outputpath=""):
 
     device.startApp(pacname)
     time.sleep(1)  # 有时候app界面还没加载出来，等1s
-    ReranOpt.startReplay(replyfile)
+    ReranOpt.startReplay(replayfile)
     while True:
         if device.getCurrentPackage() != pacname:
             print(pacname + "is canceled, stop replay")
@@ -119,7 +119,7 @@ def replayOpt(pacname="", interval=1, replyfile="", outputpath=""):
 
 
 def printUseMethod():
-    print("UIDump.py [-r] -p <app-package-name> -t <dump-interval> -f <reply-file>")
+    print("UIDump.py [-r] -p <app-package-name> -t <dump-interval> -f <replay-file>")
     print("arguments : ")
     print("-r --replay\treplay mode and need a replay script, such as \"-r ./replayscript\"")
     print("-p --package\tinput app, such as \"-p com.tencent.mm\"")

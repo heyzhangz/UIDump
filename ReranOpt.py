@@ -22,7 +22,7 @@ def endRecord(outputdir):
 
     # 转换脚本
     eventpath = outputdir + "recordevents.txt"
-    translatepath = outputdir + "replyscript.txt"
+    translatepath = outputdir + "replayscript.txt"
     cmd = "java -jar ./lib/ReranTranslator.jar " + eventpath + " " + translatepath
     subprocess.Popen(cmd)
 
