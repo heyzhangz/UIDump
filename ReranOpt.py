@@ -12,20 +12,21 @@ def startRecord(outputdir):
     cmd = "adb shell getevent -tt > " + filepath + " &"
     subprocess.Popen(cmd, shell=True)
 
-    pid = subprocess.getoutput("adb shell pgrep -f getevent")
+#    pid = subprocess.getoutput("adb shell pgrep -f getevent")
+    pid = subprocess.check_output("adb shell pgrep -f getevent", shell=True, text=True)
     return re.split("[\\s\r\n]", pid.strip())[-1]
 
 
 def endRecord(outputdir, pid):
     # 杀进程
     print("adb kill the ps " + pid)
-    subprocess.Popen("adb shell kill " + pid)
+    subprocess.Popen("adb shell kill " + pid, shell=True)
 
     # 转换脚本
     eventpath = outputdir + "recordevents.txt"
     translatepath = outputdir + "replayscript.txt"
     cmd = "java -jar ./lib/ReranTranslator.jar " + eventpath + " " + translatepath
-    subprocess.Popen(cmd)
+    subprocess.Popen(cmd, shell=True)
 
     pass
 
@@ -42,10 +43,10 @@ def startReplay(filepath):
         return False
 
     cmd = "adb push " + filepath + " " + androiddir
-    subprocess.Popen(cmd)
+    subprocess.Popen(cmd, shell=True)
 
     cmd = "adb shell " + androiddir + "replay " + androiddir + filename
-    subprocess.Popen(cmd)
+    subprocess.Popen(cmd, shell=True)
 
     pass
 
