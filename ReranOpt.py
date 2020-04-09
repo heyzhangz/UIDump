@@ -9,7 +9,8 @@ def startRecord(outputdir):
         os.makedirs(outputdir)
 
     filepath = outputdir + "recordevents.txt"
-    cmd = "adb shell getevent -tt > " + filepath + " &"
+    # 使用adb exec-out启动避免event事件太多充满stdout buffer
+    cmd = "adb exec-out getevent -tt > " + filepath + " &"
     subprocess.Popen(cmd, shell=True)
 
 #    pid = subprocess.getoutput("adb shell pgrep -f getevent")

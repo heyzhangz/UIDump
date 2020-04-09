@@ -73,6 +73,8 @@ def recordOpt(pacname="", interval=1, outputpath=""):
 
     print("record the sequence of operations")
     device.startApp(pacname)
+    # 等待启动之后再轮询判断是否已经退出
+    time.sleep(1)
     geteventpid = ReranOpt.startRecord(outputpath)
     while True:
         if device.getCurrentPackage() != pacname:
