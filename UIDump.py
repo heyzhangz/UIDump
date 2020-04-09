@@ -17,7 +17,7 @@ def startUIDump(argv):
     global DUMP_INTERVAL
 
     try:
-        opts, args = getopt.getopt(argv, "p:t:r:", ["package=", "interval=", "reply="])
+        opts, args = getopt.getopt(argv, "p:t:r:", ["package=", "interval=", "replay="])
     except getopt.GetoptError:
         printUseMethod()
         sys.exit(2)
@@ -60,39 +60,53 @@ def startUIDump(argv):
     pass
 
 
-def recordOpt(pacname="", interval=1):
+def recordOpt(pacname="", interval=1, outputpath=""):
+
+    if pacname == "":
+        print("no package name")
+        return
+
     from DeviceConnect import device
     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
-    outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + "\\"
-    dumpcount = 1
+    if outputpath == "":
+        outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + "\\"
 
+    print("record the sequence of operations")
     device.startApp(pacname)
     ReranOpt.startRecord(outputpath)
     while True:
         if device.getCurrentPackage() != pacname:
-            print(pacname + "is canceled, stop dump")
+            print(pacname + "is canceled, stop record")
             break
-        device.dumpUI(outputpath, dumpcount)
-        dumpcount += 1
 
         time.sleep(interval)
-
     ReranOpt.endRecord(outputpath)
+
+    time.sleep(1)
+    print("replay and dump the UI")
+    replayOpt(pacname, interval, outputpath + "replyscript.txt", outputpath)
 
     pass
 
 
-def replayOpt(pacname="", interval=1, replyfile=""):
+def replayOpt(pacname="", interval=1, replyfile="", outputpath=""):
+
+    if pacname == "":
+        print("no package name")
+        return
+
     from DeviceConnect import device
     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
-    outputpath = REPLAY_ROOT_PATH + pacname + "_" + timestamp + "\\"
+    if outputpath == "":
+        outputpath = REPLAY_ROOT_PATH + pacname + "_" + timestamp + "\\"
     dumpcount = 1
 
     device.startApp(pacname)
+    time.sleep(1)  # 有时候app界面还没加载出来，等1s
     ReranOpt.startReplay(replyfile)
     while True:
         if device.getCurrentPackage() != pacname:
-            print(pacname + "is canceled, stop dump")
+            print(pacname + "is canceled, stop replay")
             break
         device.dumpUI(outputpath, dumpcount)
         dumpcount += 1
@@ -105,10 +119,9 @@ def replayOpt(pacname="", interval=1, replyfile=""):
 def printUseMethod():
     print("UIDump.py [-r] -p <app-package-name> -t <dump-interval> -f <reply-file>")
     print("arguments : ")
-    print("-r\trecord mode")
+    print("-r --replay\treplay mode and need a replay script, such as \"-r ./replayscript\"")
     print("-p --package\tinput app, such as \"-p com.tencent.mm\"")
     print("-t --interval\tdump interval, default is 1s, \"-t 2\"")
-    print("-f --replyfile\ttodo maybe it is not useful")
     print()
 
 
