@@ -32,9 +32,9 @@ class DeviceConnect:
 
         pass
 
-    def dumpUI(self, outputdir):
+    def dumpUI(self, outputdir, dumpcount):
         timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
-        dirpath = outputdir + "ui-" + timestamp + "\\"
+        dirpath = outputdir + "ui_" + timestamp + "_" + str(dumpcount) + "\\"
         screenshotpath = dirpath + "screenshot.jpg"
         layoutxmlpath = dirpath + "layout.xml"
 
@@ -46,6 +46,19 @@ class DeviceConnect:
     def getInfo(self):
 
         return self.device.info
+
+    def getCurrentPackage(self):
+
+        return self.device.info["currentPackageName"]
+
+    def startApp(self, pacname=""):
+
+        if pacname == "":
+            print("no packagename")
+            return
+
+        self.device.app_start(pacname)
+        return
 
 
 device = DeviceConnect()
