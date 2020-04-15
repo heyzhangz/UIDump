@@ -42,9 +42,14 @@ class DeviceConnect:
         self.__saveLayoutXML(layoutxmlpath)
 
         pass
+
     def stopApp(self, pacname):
-        
+
         return self.device.app_stop(pacname)
+
+    def getDeviceModel(self):
+
+        return self.device.device_info["model"]
 
     def getInfo(self):
 

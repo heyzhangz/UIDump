@@ -3,16 +3,22 @@ import re
 import subprocess
 import time
 
+GETEVENT_SP_LIST = {"Nexus 5"}  # 有些设备跑""adb exec-out getevent -tt" log会不全，区分一下
 
-def startRecord(outputdir):
+
+def startRecord(outputdir, devmodel):
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
     filepath = outputdir + "recordevents.txt"
-    cmd = "adb shell getevent -tt > " + filepath + " &"
+    if devmodel in GETEVENT_SP_LIST:
+        # 部分设备用adb exec-out跑出结果不全
+        cmd = "adb shell getevent -tt > " + filepath + " &"
+    else:
+        # 使用adb exec-out启动避免event事件太多充满stdout buffer
+        cmd = "adb exec-out getevent -tt > " + filepath + " &"
     subprocess.Popen(cmd, shell=True)
 
-#    pid = subprocess.getoutput("adb shell pgrep -f getevent")
     pid = subprocess.check_output("adb shell pgrep -f getevent", shell=True, text=True)
     return re.split("[\\s\r\n]", pid.strip())[-1]
 
