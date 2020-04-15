@@ -64,8 +64,10 @@ class DeviceConnect:
         if pacname == "":
             print("no packagename")
             return
-
-        self.device.app_start(pacname)
+        try:
+            self.device.app_start(pacname)
+        except:
+            print("launch 1 fail")
 
         time.sleep(2)
 
