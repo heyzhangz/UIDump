@@ -66,6 +66,13 @@ class DeviceConnect:
             return
 
         self.device.app_start(pacname)
+
+        time.sleep(1)
+
+        if self.getCurrentPackage() != pacname:
+            print("am start fail, try to use monkey")
+            self.device.app_start(pacname, use_monkey=True)
+
         return
 
 
