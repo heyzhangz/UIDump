@@ -3,11 +3,14 @@ import read_anno
 import sys
 
 def gen_vector_from_bow(annos):
-    texts = [anno.words for anno in annos  ]
+    texts = [' '.join(anno.words) for anno in annos  ]
     print(texts)
     cv = CountVectorizer()
     cv_fit = cv.fit_transform(texts)
     print(cv.vocabulary_)
+    print(len(cv.vocabulary_))
+    print(cv_fit.toarray())
+    print(cv_fit)
 
 
 

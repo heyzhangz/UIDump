@@ -28,10 +28,15 @@ def parse_xml(xml):
         raw_words.add(node.text)
         raw_words.add(node.resid)
         raw_words.add(node.desc)
+    #raw_words = [w.lower() for w in raw_words]
+    raw_words = [w.lower() for w in raw_words]
     words = set()
     for raw_word in raw_words:
         if len(raw_word) > 50: continue #
-        alpha_word = "".join([c if c.isalnum() else ' ' for c in raw_word])
+        
+        alpha_word = ''.join(x for x in raw_word if ord(x) < 256)
+
+        alpha_word = "".join([c if c.isalpha() else ' ' for c in alpha_word])
         words.update(alpha_word.split(' '))
 
     Blacklist = ['', 'menu', 'btn', 'button', 'parent']
