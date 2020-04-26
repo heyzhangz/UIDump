@@ -10,9 +10,6 @@ from GlobalConfig import RECORD_ROOT_PATH, REPLAY_ROOT_PATH
 
 DUMP_INTERVAL = 1
 PACKAGE_NAME = ""
-WHITE_PACKAGE_LIST = ["com.google.android.GoogleCamera",
-                      "com.google.android.apps.maps",
-                      "android"]
 
 
 def startUIDump(argv):
@@ -75,16 +72,20 @@ def recordOpt(pacname="", interval=1, outputpath=""):
         outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + os.sep
 
     print("record the sequence of operations")
+
+    # 先摁一下home键 记录一下主界面状态，用于判断退出程序
+    device.pressHome()
+    stopcondition = device.getCurrentApp()
+
     device.startApp(pacname)
     # 等待启动之后再轮询判断是否已经退出
     time.sleep(1)
-    WHITE_PACKAGE_LIST.append(pacname)
     geteventpid = ReranOpt.startRecord(outputpath, device.getDeviceModel())
     while True:
-        nowpacname = device.getCurrentPackage()
-        if nowpacname not in WHITE_PACKAGE_LIST:
+        nowapp = device.getCurrentApp()
+        if nowapp == stopcondition:
             device.stopApp(pacname)
-            print("package change to " + nowpacname)
+            print("package change to " + nowapp['package'])
             print(pacname + "is canceled, stop record")
             break
 
@@ -110,16 +111,17 @@ def replayOpt(pacname="", interval=1, replayfile="", outputpath=""):
         outputpath = REPLAY_ROOT_PATH + pacname + "_" + timestamp + os.sep
     dumpcount = 1
 
+    device.pressHome()
+    stopcondition = device.getCurrentApp()
     device.startApp(pacname)
     time.sleep(10)  # 有时候app界面还没加载出来，等1s
     # 需要处理splash广告。。得多等一会儿
-    WHITE_PACKAGE_LIST.append(pacname)
     ReranOpt.startReplay(replayfile)
     while True:
-        nowpacname = device.getCurrentPackage()
-        if nowpacname not in WHITE_PACKAGE_LIST:
+        nowapp = device.getCurrentApp()
+        if nowapp == stopcondition:
             device.stopApp(pacname)
-            print("package change to " + nowpacname)
+            print("package change to " + nowapp['package'])
             print(pacname + "is canceled, stop replay")
             break
         device.dumpUI(outputpath, dumpcount)

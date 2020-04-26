@@ -57,7 +57,15 @@ class DeviceConnect:
 
     def getCurrentPackage(self):
 
-        return self.device.info["currentPackageName"]
+        return self.device.app_current()["package"]
+
+    def getCurrentApp(self):
+
+        return self.device.app_current()
+
+    def pressHome(self):
+
+        self.device.press("home")
 
     def startApp(self, pacname=""):
 
