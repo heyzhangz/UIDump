@@ -33,10 +33,12 @@ class DeviceConnect:
         pass
 
     def dumpUI(self, outputdir, dumpcount):
-        timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
-        dirpath = outputdir + "ui_" + timestamp + "_" + str(dumpcount) + os.sep
-        screenshotpath = dirpath + "screenshot.jpg"
-        layoutxmlpath = dirpath + "layout.xml"
+        timestamp = int(round(time.time() * 1000))
+        # timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
+        # dirpath = outputdir + "ui_" + timestamp + "_" + str(dumpcount) + os.sep
+        dirpath = os.path.join(outputdir, "ui_" + str(dumpcount) + "_" + str(timestamp))
+        screenshotpath = os.path.join(dirpath, "screenshot.jpg")
+        layoutxmlpath = os.path.join(dirpath, "layout.xml")
 
         self.__saveScreenshot(screenshotpath)
         self.__saveLayoutXML(layoutxmlpath)
