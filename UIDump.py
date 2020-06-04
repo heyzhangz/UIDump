@@ -124,10 +124,11 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     stopcondition = device.getCurrentApp()
 
     device.startApp(pacname)
-    # 等待启动之后再轮询判断是否已经退出
     time.sleep(1)
+    # 先加载frida
     ch.start_hook_API(os.path.join("OneForAllHook", "_agent.js"))
     time.sleep(5)  # 有时候app界面还没加载出来，等1s
+    # 等待启动之后再轮询判断是否已经退出
     while True:
         nowapp = device.getCurrentApp()
         if nowapp == stopcondition:
@@ -137,6 +138,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
             print("[Info](UIDump) stop hook")
             ch.stop_hook_API()
             break
+        print("[Info](UIDump) dump " + str(dumpcount) + "UI")
         device.dumpUI(outputpath, dumpcount)
         dumpcount += 1
         time.sleep(interval)

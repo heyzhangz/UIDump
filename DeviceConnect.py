@@ -12,18 +12,18 @@ class DeviceConnect:
         pass
 
     def __saveScreenshot(self, filepath):
-        savedir = os.path.dirname(filepath)
-        if not os.path.exists(savedir):
-            os.makedirs(savedir)
+        # savedir = os.path.dirname(filepath)
+        # if not os.path.exists(savedir):
+        #     os.makedirs(savedir)
 
         self.device.screenshot(filepath)
 
         pass
 
     def __saveLayoutXML(self, filepath):
-        savedir = os.path.dirname(filepath)
-        if not os.path.exists(savedir):
-            os.makedirs(savedir)
+        # savedir = os.path.dirname(filepath)
+        # if not os.path.exists(savedir):
+        #     os.makedirs(savedir)
 
         xml = self.device.dump_hierarchy()
         file = open(filepath, 'w', encoding='utf-8')
@@ -33,10 +33,11 @@ class DeviceConnect:
         pass
 
     def dumpUI(self, outputdir, dumpcount):
-        timestamp = int(round(time.time() * 1000))
+        timestamp = round(time.time() * 100)
         # timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
         # dirpath = outputdir + "ui_" + timestamp + "_" + str(dumpcount) + os.sep
         dirpath = os.path.join(outputdir, "ui_" + str(dumpcount) + "_" + str(timestamp))
+        os.makedirs(dirpath)
         screenshotpath = os.path.join(dirpath, "screenshot.jpg")
         layoutxmlpath = os.path.join(dirpath, "layout.xml")
 
