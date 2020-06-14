@@ -33,7 +33,7 @@ class DeviceConnect:
         pass
 
     def dumpUI(self, outputdir, dumpcount):
-        timestamp = round(time.time() * 100)
+        timestamp = round(time.time() * 1000)
         # timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
         # dirpath = outputdir + "ui_" + timestamp + "_" + str(dumpcount) + os.sep
         dirpath = os.path.join(outputdir, "ui_" + str(dumpcount) + "_" + str(timestamp))
