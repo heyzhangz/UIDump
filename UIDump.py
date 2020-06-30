@@ -123,11 +123,11 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     device.pressHome()
     stopcondition = device.getCurrentApp()
 
-    device.startApp(pacname)
-    time.sleep(1)
+    # device.startApp(pacname)
+    # time.sleep(1)
     # 先加载frida
-    ch.start_hook_API(os.path.join("OneForAllHook", "_agent.js"))
-    time.sleep(5)  # 有时候app界面还没加载出来，等1s
+    ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
+    time.sleep(1)  # 有时候app界面还没加载出来，等1s
     # 等待启动之后再轮询判断是否已经退出
     while True:
         nowapp = device.getCurrentApp()
@@ -136,7 +136,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
             print("[Info](UIDump) package change to " + nowapp['package'])
             print("[Info](UIDump)" + pacname + "is canceled, stop record")
             print("[Info](UIDump) stop hook")
-            ch.stop_hook_API()
+            ch.stop_hook()
             break
         print("[Info](UIDump) dump " + str(dumpcount) + "UI")
         device.dumpUI(outputpath, dumpcount)
