@@ -54,7 +54,8 @@ def startUIDump(argv):
         sys.exit(1)
 
     if recordmode:
-        print("[Info](UIDump) start record mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " + str(DUMP_INTERVAL))
+        print("[Info](UIDump) start record mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " + str(
+            DUMP_INTERVAL))
         recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
     else:
         print("[Info](UIDump) start replay mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " +
@@ -119,12 +120,11 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     ch = CallerHook(pacname, outputpath)
     dumpcount = 1
 
+    # 设置回调事件
+    device.startWatchers()
     # 先摁一下home键 记录一下主界面状态，用于判断退出程序
     device.pressHome()
     stopcondition = device.getCurrentApp()
-
-    # device.startApp(pacname)
-    # time.sleep(1)
     # 先加载frida
     ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
     time.sleep(1)  # 有时候app界面还没加载出来，等1s
@@ -144,6 +144,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
         time.sleep(interval)
 
     time.sleep(5)
+    device.closeWatchers()
     print("[Info](UIDump) the output saved in " + outputpath)
 
     pass

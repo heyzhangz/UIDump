@@ -88,5 +88,25 @@ class DeviceConnect:
 
         return
 
+    def startWatchers(self):
+
+        # 权限申请回调
+        self.device.watcher("PERMISSION_ALLOW").when(
+            xpath="//android.widget.Button[@resource-id='com.android.packageinstaller:id/permission_allow_button']"
+        ).click()
+        # Google登录回调
+        # Google 登录框可以点击的是com.google.android.gms:id/account_name的父节点的父节点
+        self.device.watcher("GOOGLE_LOGIN").when(
+            xpath="//android.widget.TextView[@resource-id='com.google.android.gms:id/account_name']/../.."
+        ).click()
+
+        self.device.watcher.start(1.5)
+        self.device.watcher.run()
+
+    def closeWatchers(self):
+
+        self.device.watcher.stop()
+        self.device.watcher.reset()
+
 
 device = DeviceConnect()
