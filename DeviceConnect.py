@@ -88,6 +88,19 @@ class DeviceConnect:
 
         return
 
+    def installApk(self, remote_apk_path=""):
+
+        if remote_apk_path == "":
+            print('no apk file input!')
+            return
+        self.device.app_install(remote_apk_path)
+        pass
+
+    def uninstallApk(self, package_name):
+
+        self.device.app_uninstall(package_name)
+        pass
+
     def startWatchers(self):
 
         # 权限申请回调
@@ -107,6 +120,7 @@ class DeviceConnect:
 
         self.device.watcher.stop()
         self.device.watcher.reset()
+        pass
 
 
 device = DeviceConnect()
