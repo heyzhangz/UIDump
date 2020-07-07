@@ -21,7 +21,7 @@ def startUIDump(argv):
     global DUMP_INTERVAL
 
     try:
-        opts, args = getopt.getopt(argv, "p:t:r:", ["package=", "interval=", "replay="])
+        opts, args = getopt.getopt(argv, "p:t:r:f", ["package=", "interval=", "replay=", "apkfile="])
     except getopt.GetoptError:
         printUseMethod()
         sys.exit(2)
@@ -43,6 +43,10 @@ def startUIDump(argv):
                 sys.exit(1)
             else:
                 replayfile = arg
+        elif opt in ("-f", "--apkfile"):
+            if not arg.startswith("http://"):
+                print("file url error! " + arg)
+            APKFILE = arg
         else:
             print("err args : " + arg)
             printUseMethod()
@@ -55,7 +59,10 @@ def startUIDump(argv):
 
     if recordmode:
         print("[Info](UIDump) start record mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " + str(DUMP_INTERVAL))
+        from DeviceConnect import device
+        device.installApk(APKFILE)
         recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
+        device.uninstallApk(PACKAGE_NAME)
     else:
         print("[Info](UIDump) start replay mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " +
               str(DUMP_INTERVAL) + " with replay file " + replayfile)

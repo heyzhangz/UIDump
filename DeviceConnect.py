@@ -87,6 +87,13 @@ class DeviceConnect:
             self.device.app_start(pacname, use_monkey=True)
 
         return
+    def installApk(self, remote_apk_path = ""):
+        if remote_apk_path == "":
+            print('no apk file input!')
+            return
+        self.device.app_install(remote_apk_path)
 
+    def uninstallApk(self, package_name):
+        self.device.app_uninstall(package_name)
 
 device = DeviceConnect()
