@@ -98,12 +98,18 @@ class DeviceConnect:
         if remote_apk_path == "":
             print('no apk file input!')
             return
+        print("start install " + remote_apk_path)
         self.device.app_install(remote_apk_path)
+        print("finish install")
+
         pass
 
     def uninstallApk(self, package_name):
 
+        print("start uninstall " + package_name)
         self.device.app_uninstall(package_name)
+        print("finish uninstall")
+
         pass
 
     def startWatchers(self):

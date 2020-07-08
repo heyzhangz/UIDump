@@ -45,7 +45,7 @@ class MonkeyBase:
         if self.packagename is not "":
             monkeycmd += '-p ' + self.packagename + ' '
         monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
-            '--pct-syskeys 0 --pct-appswitch 0 --pkg-whitelist-file %s --throttle %s -v -v -v %s' \
+            '--pct-syskeys 0 --pkg-whitelist-file %s --throttle %s -v -v -v %s' \
             % ('/data/local/tmp/monkey_pkg_whitelist.txt', self.timeinterval, 400000000)
 
         subprocess.Popen(monkeycmd, shell=True)
@@ -61,9 +61,6 @@ class MonkeyBase:
         return False
 
     def stopMonkey(self):
-
-        if not self.isFinish():
-            return
 
         for i in range(10):
             output = None

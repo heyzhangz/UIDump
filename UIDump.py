@@ -9,7 +9,7 @@ import time
 import frida
 
 import ReranOpt
-from GlobalConfig import RECORD_ROOT_PATH, REPLAY_ROOT_PATH
+import GlobalConfig
 from MonkeyOpt import MonkeyBase
 from OneForAllHook.hook_start import CallerHook
 
@@ -17,14 +17,16 @@ DUMP_INTERVAL = 1
 PACKAGE_NAME = ""
 APKFILE = ""
 MONKEY_TIME = 0
+RECORD_ROOT_PATH = GlobalConfig.RECORD_ROOT_PATH
 
 
 def startUIDump(argv):
-    global PACKAGE_NAME, APKFILE, MONKEY_TIME
+    global PACKAGE_NAME, APKFILE, MONKEY_TIME, RECORD_ROOT_PATH
     global DUMP_INTERVAL
 
     try:
-        opts, args = getopt.getopt(argv, "p:t:r:fm:", ["package=", "interval=", "replay=", "apkfile=", "monkeytime="])
+        opts, args = getopt.getopt(argv, "p:t:r:f:m:o:",
+                                   ["package=", "interval=", "replay=", "apkfile=", "monkeytime=", "output="])
     except getopt.GetoptError:
         printUseMethod()
         sys.exit(2)
@@ -52,6 +54,10 @@ def startUIDump(argv):
             APKFILE = arg
         elif opt in ("-m", "--monkeytime"):
             MONKEY_TIME = int(arg)
+        elif opt in ("-o", "--output"):
+            RECORD_ROOT_PATH = arg
+            if not os.path.exists(RECORD_ROOT_PATH):
+                os.makedirs(RECORD_ROOT_PATH)
         else:
             print("err args : " + arg)
             printUseMethod()
@@ -144,7 +150,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
 
     # 先加载frida
     ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
-    time.sleep(1)  # 有时候app界面还没加载出来，等1s
+    time.sleep(5)  # 有时候app界面还没加载出来，等1s
     monkey = None
     if MONKEY_TIME != 0:
         monkey = MonkeyBase(pacname=pacname, exectime=MONKEY_TIME)
@@ -158,6 +164,10 @@ def recordOpt(pacname="", interval=1, outputpath=""):
             print("[Info](UIDump)" + pacname + "is canceled, stop record")
             print("[Info](UIDump) stop hook")
             ch.stop_hook()
+            # 防止异常退出，比如错误安装，monkey还没关
+            if monkey is not None and not monkey.isFinish():
+                monkey.stopMonkey()
+                device.pressHome()
             break
         print("[Info](UIDump) dump " + str(dumpcount) + "UI")
         device.dumpUI(outputpath, dumpcount)
