@@ -63,8 +63,13 @@ class DeviceConnect:
         return self.device.app_current()["package"]
 
     def getCurrentApp(self):
+        curapp = ""
+        try:
+            curapp = self.device.app_current()
+        except OSError:
+            print("Couldn't get focused app")
 
-        return self.device.app_current()
+        return curapp
 
     def pressHome(self):
 

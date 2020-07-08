@@ -10,19 +10,21 @@ import frida
 
 import ReranOpt
 from GlobalConfig import RECORD_ROOT_PATH, REPLAY_ROOT_PATH
+from MonkeyOpt import MonkeyBase
 from OneForAllHook.hook_start import CallerHook
 
 DUMP_INTERVAL = 1
 PACKAGE_NAME = ""
 APKFILE = ""
+MONKEY_TIME = 0
 
 
 def startUIDump(argv):
-    global PACKAGE_NAME, APKFILE
+    global PACKAGE_NAME, APKFILE, MONKEY_TIME
     global DUMP_INTERVAL
 
     try:
-        opts, args = getopt.getopt(argv, "p:t:r:f", ["package=", "interval=", "replay=", "apkfile="])
+        opts, args = getopt.getopt(argv, "p:t:r:fm:", ["package=", "interval=", "replay=", "apkfile=", "monkeytime="])
     except getopt.GetoptError:
         printUseMethod()
         sys.exit(2)
@@ -48,6 +50,8 @@ def startUIDump(argv):
             if not arg.startswith("http://"):
                 print("file url error! " + arg)
             APKFILE = arg
+        elif opt in ("-m", "--monkeytime"):
+            MONKEY_TIME = int(arg)
         else:
             print("err args : " + arg)
             printUseMethod()
@@ -62,9 +66,11 @@ def startUIDump(argv):
         print("[Info](UIDump) start record mode, the package is \"" + PACKAGE_NAME +
               "\" and dump interval is " + str(DUMP_INTERVAL))
         from DeviceConnect import device
-        device.installApk(APKFILE)
+        if APKFILE is not "":
+            device.installApk(APKFILE)
         recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
-        device.uninstallApk(PACKAGE_NAME)
+        if APKFILE is not "":
+            device.uninstallApk(PACKAGE_NAME)
     else:
         print("[Info](UIDump) start replay mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " +
               str(DUMP_INTERVAL) + " with replay file " + replayfile)
@@ -133,13 +139,20 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     # 先摁一下home键 记录一下主界面状态，用于判断退出程序
     device.pressHome()
     stopcondition = device.getCurrentApp()
+    while stopcondition is "":
+        stopcondition = device.getCurrentApp()
+
     # 先加载frida
     ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
     time.sleep(1)  # 有时候app界面还没加载出来，等1s
+    monkey = None
+    if MONKEY_TIME != 0:
+        monkey = MonkeyBase(pacname=pacname, exectime=MONKEY_TIME)
+        monkey.startMonkey()
     # 等待启动之后再轮询判断是否已经退出
     while True:
         nowapp = device.getCurrentApp()
-        if nowapp == stopcondition:
+        if nowapp is not "" and nowapp == stopcondition:
             device.stopApp(pacname)
             print("[Info](UIDump) package change to " + nowapp['package'])
             print("[Info](UIDump)" + pacname + "is canceled, stop record")
@@ -150,6 +163,9 @@ def recordOpt(pacname="", interval=1, outputpath=""):
         device.dumpUI(outputpath, dumpcount)
         dumpcount += 1
         time.sleep(interval)
+        if monkey is not None and monkey.isFinish():
+            monkey.stopMonkey()
+            device.pressHome()
 
     time.sleep(5)
     device.closeWatchers()
