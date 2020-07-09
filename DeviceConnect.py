@@ -124,7 +124,7 @@ class DeviceConnect:
             xpath="//android.widget.TextView[@resource-id='com.google.android.gms:id/account_name']/../.."
         ).click()
 
-        self.device.watcher.start(1.5)
+        self.device.watcher.start(1)
         self.device.watcher.run()
 
     def closeWatchers(self):

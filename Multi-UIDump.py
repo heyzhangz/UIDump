@@ -24,7 +24,7 @@ if __name__ == "__main__":
         category = k
         for apkpath in arr[:10]:
             pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
-            newpath = 'http://10.141.209.136:8000/' + apkpath[6:]
+            newpath = 'http://10.141.209.136:8001/' + apkpath[6:]
             RECORD_ROOT_PATH = os.path.join(".", "output", "record", category)
 
             try:

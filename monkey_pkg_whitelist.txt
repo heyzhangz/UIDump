@@ -1,1 +1,2 @@
 com.google.android.packageinstaller
+com.google.android.GoogleCamera

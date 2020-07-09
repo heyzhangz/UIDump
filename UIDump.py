@@ -153,7 +153,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
     time.sleep(5)  # 有时候app界面还没加载出来，等1s
     monkey = None
     if MONKEY_TIME != 0:
-        monkey = MonkeyBase(pacname=pacname, exectime=MONKEY_TIME)
+        monkey = MonkeyBase(pacname=pacname, exectime=MONKEY_TIME, timeinterval=800)
         monkey.startMonkey()
     # 等待启动之后再轮询判断是否已经退出
     while True:
@@ -165,7 +165,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
             print("[Info](UIDump) stop hook")
             ch.stop_hook()
             # 防止异常退出，比如错误安装，monkey还没关
-            if monkey is not None and not monkey.isFinish():
+            if monkey is not None:
                 monkey.stopMonkey()
                 device.pressHome()
             break
