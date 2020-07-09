@@ -49,8 +49,6 @@ def startUIDump(argv):
             else:
                 replayfile = arg
         elif opt in ("-f", "--apkfile"):
-            if not arg.startswith("http://"):
-                print("file url error! " + arg)
             APKFILE = arg
         elif opt in ("-m", "--monkeytime"):
             MONKEY_TIME = int(arg)
@@ -73,7 +71,7 @@ def startUIDump(argv):
               "\" and dump interval is " + str(DUMP_INTERVAL))
         from DeviceConnect import device
         if APKFILE is not "":
-            device.installApk(APKFILE)
+            device.installApk(PACKAGE_NAME, APKFILE)
         recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
         if APKFILE is not "":
             device.uninstallApk(PACKAGE_NAME)

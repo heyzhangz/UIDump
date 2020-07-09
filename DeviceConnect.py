@@ -1,5 +1,9 @@
 import os
+import re
+import subprocess
 import time
+import urllib.request
+
 
 import uiautomator2
 
@@ -93,22 +97,46 @@ class DeviceConnect:
 
         return
 
-    def installApk(self, remote_apk_path=""):
+    def getInstalledApps(self):
+
+        return self.device.app_list()
+
+    def installApk(self, pkgname, remote_apk_path=""):
 
         if remote_apk_path == "":
             print('no apk file input!')
-            return
-        print("start install " + remote_apk_path)
-        self.device.app_install(remote_apk_path)
-        print("finish install")
+            return False
 
-        pass
+        if remote_apk_path.startswith("http"):
+            print('download apk from ' + remote_apk_path)
+            urllib.request.urlretrieve(remote_apk_path, os.path.join(os.path.abspath('.'), 'instaltmp.apk'))
+            remote_apk_path = os.path.join(os.path.abspath('.'), 'instaltmp.apk')
+
+        if pkgname in self.getInstalledApps():
+            print('App already exist, now uninstalling and install again...')
+
+        output = subprocess.check_output('adb install %s' % remote_apk_path, shell=True).decode()
+
+        if pkgname in self.getInstalledApps():
+            print('App installed successfully.')
+            return True
+
+        print('[Error] App installed failed.\nFail Message:\n%s' % '\n'.join(output))
+        return False
 
     def uninstallApk(self, package_name):
 
         print("start uninstall " + package_name)
         self.device.app_uninstall(package_name)
         print("finish uninstall")
+
+        if os.path.exists(os.path.join(os.path.abspath('.'), 'instaltmp.apk')):
+            print("delete tmp apk file")
+            try:
+                os.remove(os.path.join(os.path.abspath('.'), 'instaltmp.apk'))
+            except Exception as e:
+                print("delete tmp apk file failed!")
+                print(e)
 
         pass
 
@@ -135,3 +163,8 @@ class DeviceConnect:
 
 
 device = DeviceConnect()
+
+if __name__ == "__main__":
+    print(device.getInstalledApps())
+    # device.installApk('com.choiceoflove.dating', 'http://10.141.209.136:8001/skq/BehaviorNas/androzoo/app/top/com.choiceoflove.dating/9392f0c57b5a962775814caf1f6b7930.apk')
+    device.uninstallApk('com.choiceoflove.dating')
