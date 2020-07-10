@@ -149,11 +149,37 @@ class DeviceConnect:
         self.device.watcher("PERMISSION_ALLOW").when(
             xpath="//android.widget.Button[@resource-id='com.android.packageinstaller:id/permission_allow_button']"
         ).click()
+
         # Google登录回调
         # Google 登录框可以点击的是com.google.android.gms:id/account_name的父节点的父节点
         self.device.watcher("GOOGLE_LOGIN").when(
             xpath="//android.widget.TextView[@resource-id='com.google.android.gms:id/account_name']/../.."
         ).click()
+
+        # 在登录界面就不要随机触发了，直接点google账号绑定就完事了
+        # 直接点带Google字样的会有问题，目前看到都是按钮; 还有一部分是只有图标的，这种layout中描述内容比较少，目前只适配发现的
+        # 触发一次就移除该watcher，避免登录不上造成死循环
+        def GoogleBindCallbackButton():
+            self.device.xpath(
+                "//android.widget.Button[re:match(@text, '(?i)(sign|login|bind|continue).*google')]"
+            ).click()
+            self.device.watcher.remove("GOOGLE_BIND_BUTTON")
+            self.device.watcher.remove("GOOGLE_BIND_ICON")
+
+        def GoogleBindCallbackIcon():
+            self.device.xpath(
+                "//android.widget.ImageView[re:match(@resource-id, '(?i)account.*google')]"
+            ).click()
+            self.device.watcher.remove("GOOGLE_BIND_BUTTON")
+            self.device.watcher.remove("GOOGLE_BIND_ICON")
+
+        self.device.watcher("GOOGLE_BIND_BUTTON").when(
+            xpath="//android.widget.Button[re:match(@text, '(?i)(sign|login|bind|continue).*google')]"
+        ).call(GoogleBindCallbackButton)
+
+        self.device.watcher("GOOGLE_BIND_ICON").when(
+            xpath="//android.widget.ImageView[re:match(@resource-id, '(?i)account.*google')]"
+        ).call(GoogleBindCallbackIcon)
 
         self.device.watcher.start(1)
         self.device.watcher.run()
@@ -162,6 +188,11 @@ class DeviceConnect:
 
         self.device.watcher.stop()
         self.device.watcher.reset()
+        pass
+
+    def removeWatchers(self, watcherid):
+
+        self.device.watcher.remove(watcherid)
         pass
 
     # def killProcess(self, pid):
@@ -192,5 +223,9 @@ if __name__ == "__main__":
     # device.installApk('com.choiceoflove.dating', 'http://10.141.209.136:8001/skq/BehaviorNas/androzoo/app/top/com.choiceoflove.dating/9392f0c57b5a962775814caf1f6b7930.apk')
     # device.uninstallApk('com.choiceoflove.dating')
     # print(device.listRunningApps())
-    device.stopApp('com.google.android.apps.photos')
+    # device.stopApp('com.google.android.apps.photos')
     # device.startApp('com.google.android.talk')
+    device.startWatchers()
+    print('a')
+    device.closeWatchers()
+    # device.dumpUI('./', 1)

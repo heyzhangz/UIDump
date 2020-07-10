@@ -171,8 +171,11 @@ def recordOpt(pacname="", interval=1, outputpath=""):
         # nowapp = device.getCurrentApp()
         # if nowapp is not "" and nowapp == stopcondition:
         if not device.isAppRun(pacname):
-            monkey.stopMonkey()
+            if monkey is not None:
+                monkey.stopMonkey()
             if not timer.isFinish():
+                device.closeWatchers()
+                device.startWatchers()
                 ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
                 time.sleep(5)
                 monkey.startMonkey()
@@ -180,12 +183,9 @@ def recordOpt(pacname="", interval=1, outputpath=""):
 
             device.stopApp(pacname)
             # print("[Info](UIDump) package change to " + nowapp['package'])
-            print("[Info](UIDump)" + pacname + "is canceled, stop record")
+            print("[Info](UIDump)" + pacname + " is canceled, stop record")
             print("[Info](UIDump) stop hook")
             ch.stop_hook()
-            # 防止异常退出，比如错误安装，monkey还没关
-            if monkey is not None:
-                monkey.stopMonkey()
             device.pressHome()
             break
         print("[Info](UIDump) dump " + str(dumpcount) + "UI")
