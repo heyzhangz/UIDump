@@ -4,7 +4,6 @@ import subprocess
 import time
 import urllib.request
 
-
 import uiautomator2
 
 
@@ -52,7 +51,11 @@ class DeviceConnect:
 
     def stopApp(self, pacname):
 
-        return self.device.app_stop(pacname)
+        self.device.app_stop(pacname)
+        self.device.app_clear(pacname)
+
+        time.sleep(2)
+        pass
 
     def getDeviceModel(self):
 
@@ -115,13 +118,13 @@ class DeviceConnect:
         if pkgname in self.getInstalledApps():
             print('App already exist, now uninstalling and install again...')
 
-        output = subprocess.check_output('adb install %s' % remote_apk_path, shell=True).decode()
+        output = subprocess.check_output('adb install -r %s' % remote_apk_path, shell=True).decode()
 
         if pkgname in self.getInstalledApps():
             print('App installed successfully.')
             return True
 
-        print('[Error] App installed failed.\nFail Message:\n%s' % '\n'.join(output))
+        print('[Error] App installed failed.\nFail Message:\n%s' % output)
         return False
 
     def uninstallApk(self, package_name):
@@ -161,10 +164,33 @@ class DeviceConnect:
         self.device.watcher.reset()
         pass
 
+    # def killProcess(self, pid):
+    #
+    #     killcmd = 'adb shell kill %d' % pid
+    #     print("kill the apk process: %d" % pid)
+    #     subprocess.check_output(killcmd)
+    #
+    #     time.sleep(2)
+    #     pass
+
+    def listRunningApps(self):
+
+        return self.device.app_list_running()
+
+    def isAppRun(self, pkgname):
+
+        if pkgname in self.listRunningApps():
+            return True
+
+        return False
+
 
 device = DeviceConnect()
 
 if __name__ == "__main__":
-    print(device.getInstalledApps())
+    # print(device.getInstalledApps())
     # device.installApk('com.choiceoflove.dating', 'http://10.141.209.136:8001/skq/BehaviorNas/androzoo/app/top/com.choiceoflove.dating/9392f0c57b5a962775814caf1f6b7930.apk')
-    device.uninstallApk('com.choiceoflove.dating')
+    # device.uninstallApk('com.choiceoflove.dating')
+    # print(device.listRunningApps())
+    device.stopApp('com.google.android.apps.photos')
+    # device.startApp('com.google.android.talk')

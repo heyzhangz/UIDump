@@ -1,22 +1,14 @@
 import os
 import re
 import subprocess
-import sys
 import time
 
 
-def calExecCount(timeinterval, exectime):
-    return round(exectime + 10000 / timeinterval)
-
-
 class MonkeyBase:
-    starttime = None
 
-    def __init__(self, timeinterval=300, exectime=900000, pacname=""):
+    def __init__(self, timeinterval=300, pkgname=""):
         self.timeinterval = timeinterval
-        self.exectime = exectime
-        # self.execcount = calExecCount(self.timeinterval, self.exectime)
-        self.packagename = pacname
+        self.packagename = pkgname
         if not self.__checkWhiteList():
             self.__pushWhiteList()
 
@@ -45,20 +37,11 @@ class MonkeyBase:
         if self.packagename is not "":
             monkeycmd += '-p ' + self.packagename + ' '
         monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
-            '--pct-syskeys 0 --pkg-whitelist-file %s --throttle %s -v -v -v %s' \
-            % ('/data/local/tmp/monkey_pkg_whitelist.txt', self.timeinterval, 400000000)
+                     '--pct-syskeys 0 --pkg-whitelist-file %s --throttle %s -v -v -v %s' \
+                     % ('/data/local/tmp/monkey_pkg_whitelist.txt', self.timeinterval, 400000000)
 
         subprocess.Popen(monkeycmd, shell=True)
-        self.starttime = time.time() * 1000
         pass
-
-    def isFinish(self):
-
-        nowtime = time.time() * 1000
-        if nowtime - self.starttime >= self.exectime:
-            return True
-
-        return False
 
     def stopMonkey(self):
 
@@ -80,4 +63,3 @@ class MonkeyBase:
 
         time.sleep(2)
         pass
-

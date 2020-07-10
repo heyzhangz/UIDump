@@ -134,6 +134,7 @@ class CallerHook:
             time.sleep(5)
             # resume()一定要放在后面，不然hook不到onCreate
             device.resume(pid)
+            return pid
 
             # sys.stdin.read()
         except Exception as e:

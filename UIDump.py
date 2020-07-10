@@ -12,6 +12,7 @@ import ReranOpt
 import GlobalConfig
 from MonkeyOpt import MonkeyBase
 from OneForAllHook.hook_start import CallerHook
+from Timer import Timer
 
 DUMP_INTERVAL = 1
 PACKAGE_NAME = ""
@@ -71,7 +72,15 @@ def startUIDump(argv):
               "\" and dump interval is " + str(DUMP_INTERVAL))
         from DeviceConnect import device
         if APKFILE is not "":
-            device.installApk(PACKAGE_NAME, APKFILE)
+            try:
+                status = device.installApk(PACKAGE_NAME, APKFILE)
+                if not status:
+                    print('[Error] app install failed')
+                    return
+            except Exception as e:
+                print('[Error] app install failed with Exception')
+                print(e)
+                return
         recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
         if APKFILE is not "":
             device.uninstallApk(PACKAGE_NAME)
@@ -140,39 +149,53 @@ def recordOpt(pacname="", interval=1, outputpath=""):
 
     # 设置回调事件
     device.startWatchers()
+    # 设置计时器
+    timer = Timer(duration=MONKEY_TIME)
     # 先摁一下home键 记录一下主界面状态，用于判断退出程序
     device.pressHome()
-    stopcondition = device.getCurrentApp()
-    while stopcondition is "":
-        stopcondition = device.getCurrentApp()
+    time.sleep(1)
+    # stopcondition = device.getCurrentApp()
+    # while stopcondition is "":
+    #     stopcondition = device.getCurrentApp()
 
     # 先加载frida
-    ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
+    pid = ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
     time.sleep(5)  # 有时候app界面还没加载出来，等1s
     monkey = None
+    timer.start()
     if MONKEY_TIME != 0:
-        monkey = MonkeyBase(pacname=pacname, exectime=MONKEY_TIME, timeinterval=800)
+        monkey = MonkeyBase(pkgname=pacname, timeinterval=800)
         monkey.startMonkey()
     # 等待启动之后再轮询判断是否已经退出
     while True:
-        nowapp = device.getCurrentApp()
-        if nowapp is not "" and nowapp == stopcondition:
+        # nowapp = device.getCurrentApp()
+        # if nowapp is not "" and nowapp == stopcondition:
+        if not device.isAppRun(pacname):
+            monkey.stopMonkey()
+            if not timer.isFinish():
+                ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
+                time.sleep(5)
+                monkey.startMonkey()
+                continue
+
             device.stopApp(pacname)
-            print("[Info](UIDump) package change to " + nowapp['package'])
+            # print("[Info](UIDump) package change to " + nowapp['package'])
             print("[Info](UIDump)" + pacname + "is canceled, stop record")
             print("[Info](UIDump) stop hook")
             ch.stop_hook()
             # 防止异常退出，比如错误安装，monkey还没关
             if monkey is not None:
                 monkey.stopMonkey()
-                device.pressHome()
+            device.pressHome()
             break
         print("[Info](UIDump) dump " + str(dumpcount) + "UI")
         device.dumpUI(outputpath, dumpcount)
         dumpcount += 1
         time.sleep(interval)
-        if monkey is not None and monkey.isFinish():
-            monkey.stopMonkey()
+        if timer.isFinish():
+            if monkey is not None:
+                monkey.stopMonkey()
+            device.stopApp(pacname)
             device.pressHome()
 
     time.sleep(5)
