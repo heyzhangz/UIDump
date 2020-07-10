@@ -12,6 +12,7 @@ class DeviceConnect:
 
     def __init__(self):
         self.device = uiautomator2.connect()
+        self.installstatus = True
         pass
 
     def __saveScreenshot(self, filepath):
@@ -143,6 +144,10 @@ class DeviceConnect:
 
         pass
 
+    def getAppInstallStatus(self):
+
+        return self.installstatus
+
     def startWatchers(self):
 
         # 权限申请回调
@@ -180,6 +185,18 @@ class DeviceConnect:
         self.device.watcher("GOOGLE_BIND_ICON").when(
             xpath="//android.widget.ImageView[re:match(@resource-id, '(?i)account.*google')]"
         ).call(GoogleBindCallbackIcon)
+
+        # apk安装失败填出框适配，避免apk问题导致的反复重启
+        def InstallFailCallback():
+            self.installstatus = False
+            self.device.xpath(
+                "//android.widget.Button[re:match(@text, '(?i)close')]"
+            ).click()
+
+        self.device.watcher("INSTALL_FAIL").when(
+            xpath="//android.widget.TextView[@resource-id='android:id/alertTitle' "
+                  "and re:match(@text, '(?i)installation\\s+fail')]"
+        ).call(InstallFailCallback)
 
         self.device.watcher.start(1)
         self.device.watcher.run()
@@ -222,10 +239,12 @@ if __name__ == "__main__":
     # print(device.getInstalledApps())
     # device.installApk('com.choiceoflove.dating', 'http://10.141.209.136:8001/skq/BehaviorNas/androzoo/app/top/com.choiceoflove.dating/9392f0c57b5a962775814caf1f6b7930.apk')
     # device.uninstallApk('com.choiceoflove.dating')
-    # print(device.listRunningApps())
+    print(device.listRunningApps())
     # device.stopApp('com.google.android.apps.photos')
     # device.startApp('com.google.android.talk')
-    device.startWatchers()
-    print('a')
-    device.closeWatchers()
+    # print(device.installstatus)
+    # device.startWatchers()
+    # print('a')
+    # device.closeWatchers()
     # device.dumpUI('./', 1)
+    # print(device.installstatus)

@@ -173,7 +173,7 @@ def recordOpt(pacname="", interval=1, outputpath=""):
         if not device.isAppRun(pacname):
             if monkey is not None:
                 monkey.stopMonkey()
-            if not timer.isFinish():
+            if not timer.isFinish() and device.getAppInstallStatus():
                 device.closeWatchers()
                 device.startWatchers()
                 ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
