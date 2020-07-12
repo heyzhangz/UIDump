@@ -9,9 +9,7 @@ import uiautomator2
 from Logger import logger
 
 TMP_APK_FILE_PATH = os.path.join(os.path.abspath('.'), 'installtmp.apk')
-STOP_SYS_APP_LIST = [
-
-]
+WHITE_LIST_PATH = os.path.join(os.path.abspath('.'), 'monkey_pkg_whitelist.txt')
 
 
 class DeviceConnect:
@@ -21,6 +19,13 @@ class DeviceConnect:
 
         self.device = uiautomator2.connect()
         self.installstatus = True
+        self.stop_sysapp_list = [] # 白名单app 停止dump的时候要一并关掉
+
+        with open(WHITE_LIST_PATH, 'r') as f:
+            for line in f.readlines():
+                line = line.strip()
+                self.stop_sysapp_list.append(line)
+
         pass
 
     def __saveScreenshot(self, filepath):
@@ -48,10 +53,18 @@ class DeviceConnect:
         self.__saveLayoutXML(layoutxmlpath)
         pass
 
-    def stopApp(self, pkgname):
+    def stopApp(self, pkgname=""):
 
-        self.device.app_stop(pkgname)
-        self.device.app_clear(pkgname)
+        if pkgname != "":
+            self.device.app_stop(pkgname)
+            self.device.app_clear(pkgname)
+
+        # 关闭白名单APP
+        running_apps = self.getRunningApps()
+        for sysapp in self.stop_sysapp_list:
+            if sysapp in running_apps:
+                self.device.app_stop(sysapp)
+                self.device.app_clear(sysapp)
 
         time.sleep(2)
         pass

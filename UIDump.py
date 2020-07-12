@@ -120,15 +120,21 @@ def recordOpt(pkgname="", interval=1, outputpath=""):
 
     # 启动计时器
     timer.start()
+    # 异常重启次数，有些app确实起不起来，最多重启3次
+    err_restart_count = 0
     # 等待启动之后再轮询判断是否已经退出
     while True:
         if not device.isAppRun(pkgname):
+
+            # 清一下白名单APP，防止对后续dump造成影响
+            device.stopApp()
             if monkey is not None:
                 monkey.stopMonkey()
             # 如果app异常退出，且计时未结束重启app
             # getAppInstallStatus 避免当前app因为apk问题导致反复重启
-            if not timer.isFinish() and device.getAppInstallStatus():
-                logger.warning("Abnormal termination in app running, restart")
+            if not timer.isFinish() and device.getAppInstallStatus() and err_restart_count < 3:
+                err_restart_count += 1
+                logger.warning("Abnormal termination in app running, restart, count = %d" % err_restart_count)
                 device.closeWatchers()
                 device.startWatchers()
                 ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
@@ -137,7 +143,7 @@ def recordOpt(pkgname="", interval=1, outputpath=""):
                 continue
 
             device.stopApp(pkgname)
-            logger.info(pkgname + " is canceled, stop record")
+            logger.info(pkgname + " is canceled, stop record, with restart count = %d" % err_restart_count)
             ch.stop_hook()
             device.pressHome()
             break
