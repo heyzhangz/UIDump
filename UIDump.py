@@ -128,6 +128,7 @@ def recordOpt(pkgname="", interval=1, outputpath=""):
             # 如果app异常退出，且计时未结束重启app
             # getAppInstallStatus 避免当前app因为apk问题导致反复重启
             if not timer.isFinish() and device.getAppInstallStatus():
+                logger.warning("Abnormal termination in app running, restart")
                 device.closeWatchers()
                 device.startWatchers()
                 ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
