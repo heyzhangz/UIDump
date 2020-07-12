@@ -142,7 +142,7 @@ class CallerHook:
         pass
 
     def stop_hook(self):
-        print("[*] stop hook" + self.package_name)
+        print("[*] stop hook " + self.package_name)
         self.script.off('message', self.on_message)
         # self.process.off()
         pass

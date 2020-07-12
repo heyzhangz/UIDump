@@ -18,9 +18,10 @@ def readAPPList(filepath):
 if __name__ == "__main__":
     resjson = readAPPList(os.path.join(os.path.abspath("."), "category_top.json"))
     print(resjson)
-    from GlobalConfig import RECORD_ROOT_PATH
 
     for k, arr in resjson.items():
+        if k == 'Photography':
+            continue
         category = k
         for apkpath in arr[:10]:
             pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
@@ -29,6 +30,7 @@ if __name__ == "__main__":
 
             try:
                 startUIDump(['-p', pkgname, '-m', "1800000", '--apkfile', newpath, '-o', RECORD_ROOT_PATH])
+                # startUIDump(['-p', pkgname, '-m', "18000", '--apkfile', newpath, '-o', RECORD_ROOT_PATH])
             except Exception as e:
                 print("[Error] UIDump " + pkgname + " failed")
                 print(e)

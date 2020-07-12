@@ -1,39 +1,32 @@
 import getopt
 import os
-import signal
 import sys
-
-#  Global config
 import time
+import traceback
 
-import frida
-
-import ReranOpt
-import GlobalConfig
-from MonkeyOpt import MonkeyBase
+from MonkeyOpt import MonkeyOpt
 from OneForAllHook.hook_start import CallerHook
 from Timer import Timer
+from Logger import logger
 
 DUMP_INTERVAL = 1
 PACKAGE_NAME = ""
-APKFILE = ""
+APK_FILE = ""
 MONKEY_TIME = 0
-RECORD_ROOT_PATH = GlobalConfig.RECORD_ROOT_PATH
+RECORD_ROOT_PATH = os.path.join(".", "output", "record")
 
 
 def startUIDump(argv):
-    global PACKAGE_NAME, APKFILE, MONKEY_TIME, RECORD_ROOT_PATH
+    global PACKAGE_NAME, APK_FILE, MONKEY_TIME, RECORD_ROOT_PATH
     global DUMP_INTERVAL
 
     try:
-        opts, args = getopt.getopt(argv, "p:t:r:f:m:o:",
-                                   ["package=", "interval=", "replay=", "apkfile=", "monkeytime=", "output="])
+        opts, args = getopt.getopt(argv, "p:t:f:m:o:",
+                                   ["package=", "interval=", "apkfile=", "monkeytime=", "output="])
     except getopt.GetoptError:
         printUseMethod()
         sys.exit(2)
 
-    recordmode = True
-    replayfile = ""
     for opt, arg in opts:
         if opt == '-h':
             printUseMethod()
@@ -42,15 +35,8 @@ def startUIDump(argv):
             PACKAGE_NAME = arg
         elif opt in ("-t", "--interval"):
             DUMP_INTERVAL = int(arg)
-        elif opt in ("-r", "--replay"):
-            recordmode = False
-            if not os.path.exists(arg):
-                print("no such file " + arg)
-                sys.exit(1)
-            else:
-                replayfile = arg
         elif opt in ("-f", "--apkfile"):
-            APKFILE = arg
+            APK_FILE = arg
         elif opt in ("-m", "--monkeytime"):
             MONKEY_TIME = int(arg)
         elif opt in ("-o", "--output"):
@@ -58,121 +44,89 @@ def startUIDump(argv):
             if not os.path.exists(RECORD_ROOT_PATH):
                 os.makedirs(RECORD_ROOT_PATH)
         else:
-            print("err args : " + arg)
+            logger.error("err in args")
             printUseMethod()
             sys.exit(1)
 
     if PACKAGE_NAME == "":
-        print("[Error](UIDump) no package name")
+        logger.error("package name is necessary")
         printUseMethod()
         sys.exit(1)
 
-    if recordmode:
-        print("[Info](UIDump) start record mode, the package is \"" + PACKAGE_NAME +
-              "\" and dump interval is " + str(DUMP_INTERVAL))
-        from DeviceConnect import device
-        if APKFILE is not "":
-            try:
-                status = device.installApk(PACKAGE_NAME, APKFILE)
-                if not status:
-                    print('[Error] app install failed')
-                    return
-            except Exception as e:
-                print('[Error] app install failed with Exception')
-                print(e)
+    logger.info("start record mode, the package is %s and dump interval is %d" % (PACKAGE_NAME, DUMP_INTERVAL))
+    from DeviceConnect import device
+    # APK_FILE不为空，表示需要从指定路径安装app
+    if APK_FILE is not "":
+        try:
+            status = device.installApk(PACKAGE_NAME, APK_FILE)
+            if not status:
+                logger.warning("err in install app %s from %s" % (PACKAGE_NAME, APK_FILE))
+                device.deleteInstallFile()
                 return
-        recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
-        if APKFILE is not "":
-            device.uninstallApk(PACKAGE_NAME)
-    else:
-        print("[Info](UIDump) start replay mode, the package is \"" + PACKAGE_NAME + "\" and dump interval is " +
-              str(DUMP_INTERVAL) + " with replay file " + replayfile)
-        # replayOpt(PACKAGE_NAME, DUMP_INTERVAL, replayfile)
-        print("[Info](UIDump) replay mode is abandoned temporarily")
+        except Exception as e:
+            logger.warning("err in install app %s from %s, Exception: %s", (PACKAGE_NAME, APK_FILE, e))
+            traceback.print_exc()
+            device.deleteInstallFile()
+            return
+
+    recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
+
+    if APK_FILE is not "":
+        device.uninstallApk(PACKAGE_NAME)
 
     pass
 
 
-# def recordOpt(pacname="", interval=1, outputpath=""):
-#     if pacname == "":
-#         print("no package name")
-#         return
-#
-#     from DeviceConnect import device
-#     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
-#     if outputpath == "":
-#         outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + os.sep
-#
-#     print("record the sequence of operations")
-#
-#     # 先摁一下home键 记录一下主界面状态，用于判断退出程序
-#     device.pressHome()
-#     stopcondition = device.getCurrentApp()
-#
-#     device.startApp(pacname)
-#     # 等待启动之后再轮询判断是否已经退出
-#     time.sleep(1)
-#     geteventpid = ReranOpt.startRecord(outputpath, device.getDeviceModel())
-#     while True:
-#         nowapp = device.getCurrentApp()
-#         if nowapp == stopcondition:
-#             device.stopApp(pacname)
-#             print("package change to " + nowapp['package'])
-#             print(pacname + "is canceled, stop record")
-#             break
-#
-#         time.sleep(interval)
-#     ReranOpt.endRecord(outputpath, geteventpid)
-#
-#     time.sleep(5)
-#     print("replay and dump the UI")
-#     replayOpt(pacname, interval, outputpath + "replayscript.txt", outputpath)
-#
-#     pass
-
-def recordOpt(pacname="", interval=1, outputpath=""):
-    if pacname == "":
-        print("[Error](UIDump) no package name")
+def recordOpt(pkgname="", interval=1, outputpath=""):
+    if pkgname == "":
+        logger.error("no input package name")
         return
 
     from DeviceConnect import device
     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
     if outputpath == "":
-        # outputpath = RECORD_ROOT_PATH + pacname + "_" + timestamp + os.sep
-        outputpath = os.path.join(RECORD_ROOT_PATH, pacname + "_" + timestamp)
+        outputpath = os.path.join(RECORD_ROOT_PATH, pkgname + "_" + timestamp)
 
     if not os.path.exists(outputpath):
         os.makedirs(outputpath)
 
-    ch = CallerHook(pacname, outputpath)
-    dumpcount = 1
-
+    # 初始化frida
+    ch = CallerHook(pkgname, outputpath)
     # 设置回调事件
     device.startWatchers()
     # 设置计时器
-    timer = Timer(duration=MONKEY_TIME)
-    # 先摁一下home键 记录一下主界面状态，用于判断退出程序
-    device.pressHome()
-    time.sleep(1)
-    # stopcondition = device.getCurrentApp()
-    # while stopcondition is "":
-    #     stopcondition = device.getCurrentApp()
-
-    # 先加载frida
-    pid = ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
-    time.sleep(5)  # 有时候app界面还没加载出来，等1s
-    monkey = None
-    timer.start()
     if MONKEY_TIME != 0:
-        monkey = MonkeyBase(pkgname=pacname, timeinterval=800)
+        timer = Timer(duration=MONKEY_TIME)
+    else:
+        # 人工跑APP还是用home键退出脚本
+        stopcondition = device.getCurrentApp()
+        while stopcondition is "":
+            stopcondition = device.getCurrentApp()
+        timer = Timer(stopcondition=stopcondition)
+
+    device.pressHome()
+    dumpcount = 1
+    time.sleep(1)
+
+    # 目前先利用frida孵化进程
+    ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
+    time.sleep(5)  # 有时候app界面还没加载出来，等5s
+
+    # 如果设置了MONKEY_TIME，启动monkey
+    monkey = None
+    if MONKEY_TIME != 0 and device.getAppInstallStatus():
+        monkey = MonkeyOpt(pkgname=pkgname, timeinterval=800)
         monkey.startMonkey()
+
+    # 启动计时器
+    timer.start()
     # 等待启动之后再轮询判断是否已经退出
     while True:
-        # nowapp = device.getCurrentApp()
-        # if nowapp is not "" and nowapp == stopcondition:
-        if not device.isAppRun(pacname):
+        if not device.isAppRun(pkgname):
             if monkey is not None:
                 monkey.stopMonkey()
+            # 如果app异常退出，且计时未结束重启app
+            # getAppInstallStatus 避免当前app因为apk问题导致反复重启
             if not timer.isFinish() and device.getAppInstallStatus():
                 device.closeWatchers()
                 device.startWatchers()
@@ -181,72 +135,44 @@ def recordOpt(pacname="", interval=1, outputpath=""):
                 monkey.startMonkey()
                 continue
 
-            device.stopApp(pacname)
-            # print("[Info](UIDump) package change to " + nowapp['package'])
-            print("[Info](UIDump)" + pacname + " is canceled, stop record")
-            print("[Info](UIDump) stop hook")
+            device.stopApp(pkgname)
+            logger.info(pkgname + " is canceled, stop record")
             ch.stop_hook()
             device.pressHome()
             break
-        print("[Info](UIDump) dump " + str(dumpcount) + "UI")
+        logger.info("dump %s UI" % str(dumpcount))
         device.dumpUI(outputpath, dumpcount)
         dumpcount += 1
         time.sleep(interval)
         if timer.isFinish():
             if monkey is not None:
                 monkey.stopMonkey()
-            device.stopApp(pacname)
+            device.stopApp(pkgname)
             device.pressHome()
 
-    time.sleep(5)
     device.closeWatchers()
-    print("[Info](UIDump) the output saved in " + outputpath)
+    time.sleep(5)
+
+    if not device.getAppInstallStatus():
+        import shutil
+        shutil.rmtree(outputpath)
+        logger.warning("err in apk, pass the case")
+    else:
+        logger.info("the output saved in " + outputpath)
 
     pass
 
 
-# def replayOpt(pacname="", interval=1, replayfile="", outputpath=""):
-#     if pacname == "":
-#         print("no package name")
-#         return
-#
-#     from DeviceConnect import device
-#     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
-#     if outputpath == "":
-#         outputpath = REPLAY_ROOT_PATH + pacname + "_" + timestamp + os.sep
-#     dumpcount = 1
-#
-#     device.pressHome()
-#     stopcondition = device.getCurrentApp()
-#     device.startApp(pacname)
-#     time.sleep(1)
-#     startHookAPI(pacname)
-#     time.sleep(10)  # 有时候app界面还没加载出来，等1s
-#     # 需要处理splash广告。。得多等一会儿
-#     ReranOpt.startReplay(replayfile)
-#     while True:
-#         nowapp = device.getCurrentApp()
-#         if nowapp == stopcondition:
-#             device.stopApp(pacname)
-#             print("package change to " + nowapp['package'])
-#             print(pacname + "is canceled, stop replay")
-#             break
-#         device.dumpUI(outputpath, dumpcount)
-#         dumpcount += 1
-#
-#         time.sleep(interval)
-#
-#     print("the output saved in " + outputpath)
-#
-#     pass
-
 def printUseMethod():
-    print("UIDump.py [-r] -p <app-package-name> -t <dump-interval> -f <replay-file>")
+    print("UIDump.py -p <app-package-name> [-t] <dump-interval> "
+          "[-f] <apk-file-path> [-m] <monkey-run-time> [-o] <output-path>")
     print("arguments : ")
-    print("-r --replay\treplay mode and need a replay script, such as \"-r ./replayscript\"")
-    print("-p --package\tinput app, such as \"-p com.tencent.mm\"")
+    print("-p --package\tinput app is necessary, such as \"-p com.tencent.mm\"")
     print("-t --interval\tdump interval, default is 1s, \"-t 2\"")
-    print()
+    print("-f --apkfile\tapk file path, if the app isn't installed, "
+          "you can specify the apk file path, such as '/home/user/a.apk' or 'http://127.0.0.1:8000/user/a.apk")
+    print("-m --monkeytime\t monkey run time, if it isn't specified, you can dump through manual operation")
+    print("-o --output\t output path, default is ./output/record")
 
 
 if __name__ == "__main__":

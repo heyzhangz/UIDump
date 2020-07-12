@@ -1,45 +1,44 @@
 import os
-import re
 import subprocess
 import time
+import traceback
 import urllib.request
 
 import uiautomator2
+
+from Logger import logger
+
+TMP_APK_FILE_PATH = os.path.join(os.path.abspath('.'), 'installtmp.apk')
+STOP_SYS_APP_LIST = [
+
+]
 
 
 class DeviceConnect:
     device = None
 
     def __init__(self):
+
         self.device = uiautomator2.connect()
         self.installstatus = True
         pass
 
     def __saveScreenshot(self, filepath):
-        # savedir = os.path.dirname(filepath)
-        # if not os.path.exists(savedir):
-        #     os.makedirs(savedir)
 
         self.device.screenshot(filepath)
-
         pass
 
     def __saveLayoutXML(self, filepath):
-        # savedir = os.path.dirname(filepath)
-        # if not os.path.exists(savedir):
-        #     os.makedirs(savedir)
 
         xml = self.device.dump_hierarchy()
         file = open(filepath, 'w', encoding='utf-8')
         file.write(xml)
         file.close()
-
         pass
 
     def dumpUI(self, outputdir, dumpcount):
+
         timestamp = round(time.time() * 1000)
-        # timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
-        # dirpath = outputdir + "ui_" + timestamp + "_" + str(dumpcount) + os.sep
         dirpath = os.path.join(outputdir, "ui_" + str(dumpcount) + "_" + str(timestamp))
         os.makedirs(dirpath)
         screenshotpath = os.path.join(dirpath, "screenshot.jpg")
@@ -47,100 +46,79 @@ class DeviceConnect:
 
         self.__saveScreenshot(screenshotpath)
         self.__saveLayoutXML(layoutxmlpath)
-
         pass
 
-    def stopApp(self, pacname):
+    def stopApp(self, pkgname):
 
-        self.device.app_stop(pacname)
-        self.device.app_clear(pacname)
+        self.device.app_stop(pkgname)
+        self.device.app_clear(pkgname)
 
         time.sleep(2)
         pass
-
-    def getDeviceModel(self):
-
-        return self.device.device_info["model"]
-
-    def getInfo(self):
-
-        return self.device.info
 
     def getCurrentPackage(self):
 
         return self.device.app_current()["package"]
 
-    def getCurrentApp(self):
-        curapp = ""
-        try:
-            curapp = self.device.app_current()
-        except OSError:
-            print("Couldn't get focused app")
-
-        return curapp
-
     def pressHome(self):
 
         self.device.press("home")
 
-    def startApp(self, pacname=""):
+    def getCurrentApp(self):
 
-        if pacname == "":
-            print("no packagename")
-            return
+        curapp = ""
         try:
-            self.device.app_start(pacname)
-        except:
-            print("launch 1 fail")
+            curapp = self.device.app_current()
+        except OSError:
+            logger.error("Couldn't get focused app")
 
-        time.sleep(2)
-
-        if self.getCurrentPackage() != pacname:
-            print("am start fail, try to use monkey")
-            self.device.app_start(pacname, use_monkey=True)
-
-        return
+        return curapp
 
     def getInstalledApps(self):
 
         return self.device.app_list()
 
-    def installApk(self, pkgname, remote_apk_path=""):
+    def installApk(self, pkgname, remoteApkPath=""):
 
-        if remote_apk_path == "":
-            print('no apk file input!')
+        logger.info("start install " + pkgname)
+        if remoteApkPath == "":
             return False
 
-        if remote_apk_path.startswith("http"):
-            print('download apk from ' + remote_apk_path)
-            urllib.request.urlretrieve(remote_apk_path, os.path.join(os.path.abspath('.'), 'instaltmp.apk'))
-            remote_apk_path = os.path.join(os.path.abspath('.'), 'instaltmp.apk')
+        if remoteApkPath.startswith("http"):
+            logger.info('Download apk from %s' % remoteApkPath)
+            urllib.request.urlretrieve(remoteApkPath, TMP_APK_FILE_PATH)
+            remoteApkPath = TMP_APK_FILE_PATH
 
-        if pkgname in self.getInstalledApps():
-            print('App already exist, now uninstalling and install again...')
+        subprocess.check_output('adb install -r %s' % remoteApkPath, shell=True).decode()
 
-        output = subprocess.check_output('adb install -r %s' % remote_apk_path, shell=True).decode()
+        if pkgname not in self.getInstalledApps():
+            logger.error("App installed failed.")
+            return False
 
-        if pkgname in self.getInstalledApps():
-            print('App installed successfully.')
-            return True
+        logger.info("App: %s installed successfully." % pkgname)
+        return True
 
-        print('[Error] App installed failed.\nFail Message:\n%s' % output)
-        return False
+    def uninstallApk(self, pkgname):
 
-    def uninstallApk(self, package_name):
+        logger.info("start uninstall " + pkgname)
+        status = self.device.app_uninstall(pkgname)
+        if status:
+            logger.info("finish uninstall " + pkgname)
+        else:
+            logger.warning("err in uninstall %s, please check" % pkgname)
 
-        print("start uninstall " + package_name)
-        self.device.app_uninstall(package_name)
-        print("finish uninstall")
+        self.deleteInstallFile()
+        pass
 
-        if os.path.exists(os.path.join(os.path.abspath('.'), 'instaltmp.apk')):
-            print("delete tmp apk file")
+    def deleteInstallFile(self):
+
+        if os.path.exists(TMP_APK_FILE_PATH):
+            logger.info("delete tmp apk file")
             try:
-                os.remove(os.path.join(os.path.abspath('.'), 'instaltmp.apk'))
+                os.remove(TMP_APK_FILE_PATH)
             except Exception as e:
-                print("delete tmp apk file failed!")
-                print(e)
+                logger.warning("delete tmp apk file failed! %s" % e)
+                traceback.print_exc()
 
         pass
 
@@ -187,6 +165,8 @@ class DeviceConnect:
         ).call(GoogleBindCallbackIcon)
 
         # apk安装失败填出框适配，避免apk问题导致的反复重启
+        self.installstatus = True
+
         def InstallFailCallback():
             self.installstatus = False
             self.device.xpath(
@@ -212,22 +192,13 @@ class DeviceConnect:
         self.device.watcher.remove(watcherid)
         pass
 
-    # def killProcess(self, pid):
-    #
-    #     killcmd = 'adb shell kill %d' % pid
-    #     print("kill the apk process: %d" % pid)
-    #     subprocess.check_output(killcmd)
-    #
-    #     time.sleep(2)
-    #     pass
-
-    def listRunningApps(self):
+    def getRunningApps(self):
 
         return self.device.app_list_running()
 
     def isAppRun(self, pkgname):
 
-        if pkgname in self.listRunningApps():
+        if pkgname in self.getRunningApps():
             return True
 
         return False
@@ -236,15 +207,4 @@ class DeviceConnect:
 device = DeviceConnect()
 
 if __name__ == "__main__":
-    # print(device.getInstalledApps())
-    # device.installApk('com.choiceoflove.dating', 'http://10.141.209.136:8001/skq/BehaviorNas/androzoo/app/top/com.choiceoflove.dating/9392f0c57b5a962775814caf1f6b7930.apk')
-    # device.uninstallApk('com.choiceoflove.dating')
-    print(device.listRunningApps())
-    # device.stopApp('com.google.android.apps.photos')
-    # device.startApp('com.google.android.talk')
-    # print(device.installstatus)
-    # device.startWatchers()
-    # print('a')
-    # device.closeWatchers()
-    # device.dumpUI('./', 1)
-    # print(device.installstatus)
+    device.device.app_stop_all()
