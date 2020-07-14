@@ -127,7 +127,7 @@ def recordOpt(pkgname="", interval=1, outputpath=""):
         if not device.isAppRun(pkgname):
 
             # 清一下白名单APP，防止对后续dump造成影响
-            device.stopApp()
+            # device.stopApp()
             if monkey is not None:
                 monkey.stopMonkey()
             # 如果app异常退出，且计时未结束重启app

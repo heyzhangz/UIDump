@@ -43,7 +43,8 @@ class MonkeyOpt:
         if self.packagename is not "":
             monkeycmd += '-p ' + self.packagename + ' '
         monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
-                     '--pct-syskeys 0 --pct-appswitch 0 --pkg-whitelist-file %s --throttle %s -v -v -v %s' \
+                     '--pct-syskeys 0 --pct-rotation 0 --pkg-whitelist-file %s ' \
+                     '--throttle %s -v -v -v %s' \
                      % ('/data/local/tmp/' + MONKEY_PKG_WHITELIST_FILE, self.timeinterval, 400000000)
 
         subprocess.Popen(monkeycmd, shell=True)

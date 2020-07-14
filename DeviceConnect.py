@@ -19,12 +19,12 @@ class DeviceConnect:
 
         self.device = uiautomator2.connect()
         self.installstatus = True
-        self.stop_sysapp_list = [] # 白名单app 停止dump的时候要一并关掉
-
-        with open(WHITE_LIST_PATH, 'r') as f:
-            for line in f.readlines():
-                line = line.strip()
-                self.stop_sysapp_list.append(line)
+        # self.stop_sysapp_list = [] # 白名单app 停止dump的时候要一并关掉
+        #
+        # with open(WHITE_LIST_PATH, 'r') as f:
+        #     for line in f.readlines():
+        #         line = line.strip()
+        #         self.stop_sysapp_list.append(line)
 
         pass
 
@@ -56,15 +56,17 @@ class DeviceConnect:
     def stopApp(self, pkgname=""):
 
         if pkgname != "":
+            logger.info("stop app: " + pkgname)
             self.device.app_stop(pkgname)
             self.device.app_clear(pkgname)
 
         # 关闭白名单APP
-        running_apps = self.getRunningApps()
-        for sysapp in self.stop_sysapp_list:
-            if sysapp in running_apps:
-                self.device.app_stop(sysapp)
-                self.device.app_clear(sysapp)
+        # running_apps = self.getRunningApps()
+        # for sysapp in self.stop_sysapp_list:
+        #     if sysapp in running_apps:
+        #         logger.info("stop app: " + sysapp)
+        #         self.device.app_stop(sysapp)
+        #         self.device.app_clear(sysapp)
 
         time.sleep(2)
         pass
@@ -220,4 +222,4 @@ class DeviceConnect:
 device = DeviceConnect()
 
 if __name__ == "__main__":
-    device.device.app_stop_all()
+    device.stopApp("com.thetrainline")

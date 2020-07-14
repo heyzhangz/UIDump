@@ -23,6 +23,7 @@ class Timer:
             from DeviceConnect import device
             nowapp = device.getCurrentApp()
             if nowapp is not "" and nowapp == self.stopcondition:
+                logger.info("the record is end")
                 return True
         else:
             nowtime = time.time() * 1000
