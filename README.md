@@ -2,26 +2,36 @@
 
 #### 使用
 ```
-py UIDump.py -p <app-package-name> [-t <dump-interval>] [-r <replay-script>]
+py UIDump.py -p <app-package-name> [-t <dump-interval>] [-f <apk-file-path>] [-m <monkey-run-time>] [-o <output-path>]
 
-	-p --package <app-package-name> 用来录制或者重放的app包名
-	-t --interval <dump-interval> dump UI 的时间间隔，默认是1s
-	-r --replay <replay-script> 重放模式，需要提供重放脚本；不使用该参数为记录模式
+	-p --package <app-package-name> 用来Dump数据的app包名
+	-t --interval <dump-interval> Dump UI 的时间间隔，默认是1s
+	-f --apkfile <apk-file-path> 待安装的apk文件路径，需要和-p指定的app包名一致，支持url。
+	-m --monkeytime <monkey-run-time> 设置monkey运行的毫秒数，指定该参数的话为全自动模式，monkey计时结束停止录制；未指定该参数为半自动模式，手动操作，按"home"键停止Dump。
+	-o --output <output-path> Dump数据的输出路径，默认输出路径为./output/record
 
 ```
 
-#### 记录操作
+#### 半自动Dump
+在该模式下，需要人为手动触发相关场景，按"home"键停止Dump。
 ```
 py ./UIDump.py -p com.tencent.mm
 ```
-记录操作时，会自动打开指定包名的app，随后会记录人为操作顺序。若要终止记录，退出APP即可。
-终止记录后会进行一次操作重放，在重放过程中会dump UI信息到./output/record目录，其中：
-recordevents.txt	为getevent的log
-replayscript.txt	 为重放脚本
 
-#### 重放操作
+#### 全自动Dump
+==需要指定 -m 参数开启改模式==
+在该模式下，采用monkey代替手动触发相关场景。
+因为monkey需要白名单来指定可触发的package范围，如需补充可扩展`./monkey_pkg_whitelist.txt`文件
+
 ```
-py ./UIDump.py -p com.tencent.mm -r ./output/record/com.tencent.mm_202004091643/replayscript.txt
+py ./UIDump.py -p com.tencent.mm -m 1800000
 ```
-重放操作需要通过 -r 参数指定重放脚本。
-在重放过程中会dump UI信息到./output/replay目录。
+
+#### 批量全自动Dump
+==TODO==
+目前流程比较简单，就是读取app目录，逐个调用全自动的UIDump，具体运行参数可以在脚本中直接修改
+
+```
+py ./Multi-UIDump.py
+```
+
