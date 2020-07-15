@@ -193,6 +193,17 @@ class DeviceConnect:
                   "and re:match(@text, '(?i)installation\\s+fail')]"
         ).call(InstallFailCallback)
 
+        # 程序崩溃弹出框 如"Unfortunately, Maps has stopped."
+        def StartFailCallback():
+            self.device.xpath(
+                "//android.widget.Button[re:match(@text, '(?i)ok')]"
+            ).click()
+
+        self.device.watcher("START_FAIL").when(
+            xpath="//android.widget.TextView[@resource-id='android:id/message' "
+                  "and re:match(@text, '(?i)unfortunately.*stopped.')]"
+        ).call(StartFailCallback)
+
         self.device.watcher.start(1)
         self.device.watcher.run()
 

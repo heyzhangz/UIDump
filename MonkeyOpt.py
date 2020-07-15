@@ -54,9 +54,10 @@ class MonkeyOpt:
 
         for i in range(10):
             output = None
-            cmd_pid = "adb shell ps | grep monkey"
+            cmd_pid = ["adb", "shell", "ps", "|", "grep", "monkey"]
             try:
-                output = subprocess.check_output(cmd_pid).decode()
+                output = subprocess.check_output(cmd_pid)
+                output = output.decode()
             except Exception:
                 logger.info("monkey stop error")
 
