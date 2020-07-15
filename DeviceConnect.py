@@ -13,11 +13,16 @@ WHITE_LIST_PATH = os.path.join(os.path.abspath('.'), 'monkey_pkg_whitelist.txt')
 
 
 class DeviceConnect:
-    device = None
 
-    def __init__(self):
+    def __init__(self, udid: str = ""):
 
-        self.device = uiautomator2.connect()
+        self.udid = udid
+        if self.udid is not "":
+            logger.info("init uiautomatior2 in %s" % self.udid)
+            self.device = uiautomator2.connect(udid)
+        else:
+            logger.info("init uiautomatior2 in default device")
+            self.device = uiautomator2.connect()
         self.installstatus = True
         # self.stop_sysapp_list = [] # 白名单app 停止dump的时候要一并关掉
         #
@@ -104,7 +109,7 @@ class DeviceConnect:
             urllib.request.urlretrieve(remoteApkPath, TMP_APK_FILE_PATH)
             remoteApkPath = TMP_APK_FILE_PATH
 
-        subprocess.check_output('adb install -r %s' % remoteApkPath, shell=True).decode()
+        subprocess.check_output('adb -s %s install -r %s' % (self.udid, remoteApkPath), shell=True).decode()
 
         if pkgname not in self.getInstalledApps():
             logger.error("App installed failed.")
@@ -230,7 +235,6 @@ class DeviceConnect:
         return False
 
 
-device = DeviceConnect()
-
-if __name__ == "__main__":
-    device.stopApp("com.thetrainline")
+# if __name__ == "__main__":
+    # device = DeviceConnect()
+    # device.stopApp("com.thetrainline")

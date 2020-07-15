@@ -17,12 +17,12 @@ RECORD_ROOT_PATH = os.path.join(".", "output", "record")
 
 
 def startUIDump(argv):
-    global PACKAGE_NAME, APK_FILE, MONKEY_TIME, RECORD_ROOT_PATH
-    global DUMP_INTERVAL
+    global PACKAGE_NAME, APK_FILE, MONKEY_TIME, RECORD_ROOT_PATH, DUMP_INTERVAL
+    udid = ""
 
     try:
-        opts, args = getopt.getopt(argv, "p:t:f:m:o:",
-                                   ["package=", "interval=", "apkfile=", "monkeytime=", "output="])
+        opts, args = getopt.getopt(argv, "p:t:f:m:o:d:",
+                                   ["package=", "interval=", "apkfile=", "monkeytime=", "output=", "device="])
     except getopt.GetoptError:
         printUseMethod()
         sys.exit(2)
@@ -43,6 +43,8 @@ def startUIDump(argv):
             RECORD_ROOT_PATH = arg
             if not os.path.exists(RECORD_ROOT_PATH):
                 os.makedirs(RECORD_ROOT_PATH)
+        elif opt in ("-d", "--device"):
+            udid = arg
         else:
             logger.error("err in args")
             printUseMethod()
@@ -53,8 +55,17 @@ def startUIDump(argv):
         printUseMethod()
         sys.exit(1)
 
+    if udid == "":
+        udid = [line.split('\t')[0] for line in
+                os.popen("adb devices", 'r', 1).read().split('\n') if
+                len(line) != 0 and line.find('\tdevice') != -1][0]
+        if udid == "":
+            logger.error("no available devices")
+            sys.exit(1)
+
     logger.info("start record mode, the package is %s and dump interval is %d" % (PACKAGE_NAME, DUMP_INTERVAL))
-    from DeviceConnect import device
+    from DeviceConnect import DeviceConnect
+    device = DeviceConnect(udid)
     # APK_FILE不为空，表示需要从指定路径安装app
     if APK_FILE is not "":
         try:
@@ -69,7 +80,7 @@ def startUIDump(argv):
             device.deleteInstallFile()
             return
 
-    recordOpt(PACKAGE_NAME, DUMP_INTERVAL)
+    recordOpt(device, PACKAGE_NAME, DUMP_INTERVAL)
 
     if APK_FILE is not "":
         device.uninstallApk(PACKAGE_NAME)
@@ -77,12 +88,11 @@ def startUIDump(argv):
     pass
 
 
-def recordOpt(pkgname="", interval=1, outputpath=""):
+def recordOpt(device, pkgname="", interval=1, outputpath=""):
     if pkgname == "":
         logger.error("no input package name")
         return
 
-    from DeviceConnect import device
     timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
     if outputpath == "":
         outputpath = os.path.join(RECORD_ROOT_PATH, pkgname + "_" + timestamp)
@@ -115,7 +125,7 @@ def recordOpt(pkgname="", interval=1, outputpath=""):
     # 如果设置了MONKEY_TIME，启动monkey
     monkey = None
     if MONKEY_TIME != 0 and device.getAppInstallStatus():
-        monkey = MonkeyOpt(pkgname=pkgname, timeinterval=800)
+        monkey = MonkeyOpt(udid=device.udid, pkgname=pkgname, timeinterval=800)
         monkey.startMonkey()
 
     # 启动计时器
