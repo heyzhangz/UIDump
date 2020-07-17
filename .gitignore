@@ -7,3 +7,4 @@ parser/.DS_Store
 parser/.ipynb_checkpoints/
 word_filter.ipynb
 model/*
+a.py
