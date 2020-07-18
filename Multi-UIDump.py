@@ -1,9 +1,12 @@
 import json
 import os
 import re
+import sys
+
+rootdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(rootdir)
 
 from src.Distribute import Dispatch, App
-
 
 def readAPPList(filepath):
     if not os.path.exists(filepath):
@@ -40,6 +43,10 @@ class UIDumpTask:
 
 
 if __name__ == "__main__":
-    udids = None
+    
+    udids = [
+        'emulator-5564',
+        'emulator-5566'
+    ]
     udt = UIDumpTask()
     udt.dispatch()
