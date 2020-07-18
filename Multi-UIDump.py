@@ -17,7 +17,7 @@ def readAPPList(filepath):
 
 class UIDumpTask:
 
-    def __init__(self):
+    def __init__(self, udids=None):
         self.apkList = []
         # json格式 按类别划分
         resjson = readAPPList(os.path.join(os.path.abspath("."), "category_top.json"))
@@ -27,9 +27,12 @@ class UIDumpTask:
                 newpath = 'http://10.141.209.136:8002/' + apkpath[6:]
                 self.apkList.append(App(pkgname=pkgname, apkpath=newpath))
 
-        self.udids = [line.split('\t')[0] for line in
-                      os.popen("adb devices", 'r', 1).read().split('\n') if
-                      len(line) != 0 and line.find('\tdevice') != -1]
+        if udids is None:
+            self.udids = [line.split('\t')[0] for line in
+                          os.popen("adb devices", 'r', 1).read().split('\n') if
+                          len(line) != 0 and line.find('\tdevice') != -1]
+        else:
+            self.udids = udids
 
     def dispatch(self):
         dispatch = Dispatch.start(appQueue=self.apkList, udidList=self.udids)
@@ -38,5 +41,6 @@ class UIDumpTask:
 
 
 if __name__ == "__main__":
+    udids = None
     udt = UIDumpTask()
     udt.dispatch()
