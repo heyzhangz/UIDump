@@ -45,8 +45,8 @@ class UIDumpTask:
 if __name__ == "__main__":
     
     udids = [
-        'emulator-5564',
-        'emulator-5566'
+        'emulator-5556',
+        '05e0779cf0db3b3e'
     ]
-    udt = UIDumpTask()
+    udt = UIDumpTask(udids)
     udt.dispatch()

@@ -33,7 +33,7 @@ class Dispatch(pykka.ThreadingActor):
             for worker in self.aliveWorkers:
                 app = self.appQueue.pop()
                 logger.info('Dispatch worker-%s : %s' % (self.record[worker], app.pkgname))
-                worker.tell({'apk_path': app.apkpath, 'pkgname': app.pkgname, 'current_worker': self.actor_ref})
+                worker.tell({'apkpath': app.apkpath, 'pkgname': app.pkgname, 'currentworker': self.actor_ref})
 
             self.aliveWorkersNum = len(self.aliveWorkers)
             logger.info('Workers num: %s' % self.aliveWorkersNum)
@@ -44,7 +44,7 @@ class Dispatch(pykka.ThreadingActor):
     def on_receive(self, message: dict):
 
         return_worker = message.get('worker')
-        error_flag = message.get('is_error')
+        error_flag = message.get('iserror')
         if error_flag:
             logger.error('%s finish testing %s with error!' % (return_worker.name, return_worker.pkgname))
             # self.appQueue.append(return_worker.app)
@@ -73,6 +73,7 @@ class Dispatch(pykka.ThreadingActor):
 
 
 class Worker(pykka.ThreadingActor):
+
     def __init__(self, name: str, udid: str):
         super(Worker, self).__init__()
         self.name = name
@@ -81,13 +82,13 @@ class Worker(pykka.ThreadingActor):
         self.pkgname = ''
 
     def on_receive(self, message: dict):
-        self.apkPath = message.get('apk_path')
+        self.apkPath = message.get('apkpath')
         self.pkgname = message.get('pkgname')
-        currentWork = message.get('current_worker')
+        currentWork = message.get('currentworker')
 
         try:
             # ud = UIDump(['-p', self.pkgname, '-m', "1800000", '--apkfile', self.apkPath])
-            ud = UIDump(['-p', self.pkgname, '-m', "36000", '--apkfile', self.apkPath])
+            ud = UIDump(['-p', self.pkgname, '-m', "36000", '--apkfile', self.apkPath, '-d', self.udid])
             ud.startUIDump()
         except Exception as e:
             print(e)
@@ -97,4 +98,4 @@ class Worker(pykka.ThreadingActor):
         else:
             is_error = False
 
-        currentWork.tell({'worker': self, 'is_error': is_error})
+        currentWork.tell({'worker': self, 'iserror': is_error})

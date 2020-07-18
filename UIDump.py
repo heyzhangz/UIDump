@@ -134,7 +134,7 @@ class UIDump:
             os.makedirs(outputpath)
 
         # 初始化frida
-        ch = CallerHook(self.pkgname, outputpath)
+        # ch = CallerHook(self.pkgname, outputpath)
         # 设置回调事件
         self.device.startWatchers()
 
@@ -151,7 +151,7 @@ class UIDump:
 
         # 目前先利用frida孵化进程 有bug，用Monkey起
         self.device.startApp(self.pkgname)
-        ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
+        # ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
         time.sleep(5)  # 有时候app界面还没加载出来，等5s
 
         # 如果设置了MONKEY_TIME，启动monkey
@@ -180,7 +180,7 @@ class UIDump:
                     self.device.closeWatchers()
                     self.device.startWatchers()
                     self.device.startApp(self.pkgname)
-                    ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
+                    # ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
                     time.sleep(5)
                     monkey.startMonkey()
                     continue
