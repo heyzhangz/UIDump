@@ -3,23 +3,22 @@ import re
 import subprocess
 import time
 
-from Logger import logger
+from GlobalConfig import MONKEY_WHITE_LIST_PATH, MONKEY_LOG_NAME, MONKEY_TIME_INTERVAL, MONKEY_WHITE_LIST_NAME
+from lib.Logger import logger
 
-MONKEY_PKG_WHITELIST_FILE = 'monkey_pkg_whitelist.txt'
 
+class Monkey:
 
-class MonkeyOpt:
-
-    def __init__(self, udid="", timeinterval=300, pkgname=""):
+    def __init__(self, outdir, udid="", timeInterval=MONKEY_TIME_INTERVAL, pkgname=""):
 
         if udid == "":
             raise Exception("no target device in monkey")
         self.udid = udid
         logger.info("init monkey in %s" % self.udid)
-        self.timeinterval = timeinterval
+        self.timeInterval = timeInterval
         self.packagename = pkgname
-        # if not self.__checkWhiteList():
-        #     self.__pushWhiteList()
+        self.logdir = outdir
+        # 把白名单推到临时目录
         self.__pushWhiteList()
 
         pass
@@ -27,8 +26,9 @@ class MonkeyOpt:
     def __checkWhiteList(self):
 
         checkcmd = 'adb -s %s shell "[ -e /data/local/tmp/%s ] && echo 1 || echo 0"' \
-                   % (self.udid, MONKEY_PKG_WHITELIST_FILE)
+                   % (self.udid, MONKEY_WHITE_LIST_PATH)
         output = subprocess.check_output(checkcmd, shell=True).decode().strip()
+
         if output is "1":
             return True
         else:
@@ -38,7 +38,7 @@ class MonkeyOpt:
 
         logger.info("push white list to /data/local/tmp/")
         pushcmd = 'adb -s %s push %s /data/local/tmp/' \
-                  % (self.udid, os.path.join(os.path.abspath('.'), MONKEY_PKG_WHITELIST_FILE))
+                  % (self.udid, os.path.join(os.path.abspath('.'), MONKEY_WHITE_LIST_PATH))
         subprocess.Popen(pushcmd, shell=True)
 
         pass
@@ -50,8 +50,9 @@ class MonkeyOpt:
             monkeycmd += '-p ' + self.packagename + ' '
         monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
                      '--pct-syskeys 0 --pct-rotation 0 --pkg-whitelist-file %s ' \
-                     '--throttle %s -v -v -v %s' \
-                     % ('/data/local/tmp/' + MONKEY_PKG_WHITELIST_FILE, self.timeinterval, 400000000)
+                     '--throttle %s -v -v -v %s >> %s &' \
+                     % ('/data/local/tmp/' + MONKEY_WHITE_LIST_NAME, self.timeInterval, 400000000,
+                        os.path.join(self.logdir, MONKEY_LOG_NAME))
 
         subprocess.Popen(monkeycmd, shell=True)
         pass

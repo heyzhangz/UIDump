@@ -4,193 +4,215 @@ import sys
 import time
 import traceback
 
-from MonkeyOpt import MonkeyOpt
+from GlobalConfig import DUMP_INTERVAL, MONKEY_TIME, RECORD_OUTPUT_PATH, MONKEY_TIME_INTERVAL
 from OneForAllHook.hook_start import CallerHook
-from Timer import Timer
-from Logger import logger
-
-DUMP_INTERVAL = 1
-PACKAGE_NAME = ""
-APK_FILE = ""
-MONKEY_TIME = 0
-RECORD_ROOT_PATH = os.path.join(".", "output", "record")
+from lib.Common import deleteFile
+from lib.Logger import logger
+from src.DeviceConnect import DeviceConnect
+from src.Monkey import Monkey
+from src.Timer import Timer
 
 
-def startUIDump(argv):
-    global PACKAGE_NAME, APK_FILE, MONKEY_TIME, RECORD_ROOT_PATH, DUMP_INTERVAL
-    udid = ""
+class UIDump:
 
-    try:
-        opts, args = getopt.getopt(argv, "p:t:f:m:o:d:",
-                                   ["package=", "interval=", "apkfile=", "monkeytime=", "output=", "device="])
-    except getopt.GetoptError:
-        printUseMethod()
-        sys.exit(2)
+    def __init__(self, argv):
 
-    for opt, arg in opts:
-        if opt == '-h':
-            printUseMethod()
-            sys.exit()
-        elif opt in ("-p", "--package"):
-            PACKAGE_NAME = arg
-        elif opt in ("-t", "--interval"):
-            DUMP_INTERVAL = int(arg)
-        elif opt in ("-f", "--apkfile"):
-            APK_FILE = arg
-        elif opt in ("-m", "--monkeytime"):
-            MONKEY_TIME = int(arg)
-        elif opt in ("-o", "--output"):
-            RECORD_ROOT_PATH = arg
-            if not os.path.exists(RECORD_ROOT_PATH):
-                os.makedirs(RECORD_ROOT_PATH)
-        elif opt in ("-d", "--device"):
-            udid = arg
-        else:
-            logger.error("err in args")
-            printUseMethod()
-            sys.exit(1)
+        self.udid = ""
+        self.pkgname = ""
+        self.dumpInterval = DUMP_INTERVAL
+        self.apkFilePath = ""
+        self.monkeyTime = MONKEY_TIME
+        self.recordOutPath = RECORD_OUTPUT_PATH
+        self.device = None
+        self.timer = None
 
-    if PACKAGE_NAME == "":
-        logger.error("package name is necessary")
-        printUseMethod()
-        sys.exit(1)
+        self.__getConfig(argv)
 
-    if udid == "":
-        udid = [line.split('\t')[0] for line in
-                os.popen("adb devices", 'r', 1).read().split('\n') if
-                len(line) != 0 and line.find('\tdevice') != -1][0]
-        if udid == "":
-            logger.error("no available devices")
-            sys.exit(1)
+        pass
 
-    logger.info("start record mode, the package is %s and dump interval is %d" % (PACKAGE_NAME, DUMP_INTERVAL))
-    from DeviceConnect import DeviceConnect
-    device = DeviceConnect(udid)
-    # APK_FILE不为空，表示需要从指定路径安装app
-    if APK_FILE is not "":
+    def __getConfig(self, argv):
+
         try:
-            status = device.installApk(PACKAGE_NAME, APK_FILE)
-            if not status:
-                logger.warning("err in install app %s from %s" % (PACKAGE_NAME, APK_FILE))
-                device.deleteInstallFile()
+            opts, args = getopt.getopt(argv, "p:t:f:m:o:d:",
+                                       ["package=", "interval=", "apkfile=", "monkeytime=", "output=", "device="])
+        except getopt.GetoptError:
+            self.__printUseMethod()
+            sys.exit(2)
+
+        for opt, arg in opts:
+            if opt == '-h':
+                self.__printUseMethod()
+                sys.exit()
+            elif opt in ("-p", "--package"):
+                self.pkgname = arg
+            elif opt in ("-t", "--interval"):
+                self.dumpInterval = int(arg)
+            elif opt in ("-f", "--apkfile"):
+                self.apkFilePath = arg
+            elif opt in ("-m", "--monkeytime"):
+                self.monkeyTime = int(arg)
+            elif opt in ("-o", "--output"):
+                self.recordOutPath = arg
+                if not os.path.exists(self.recordOutPath):
+                    os.makedirs(self.recordOutPath)
+            elif opt in ("-d", "--device"):
+                self.udid = arg
+            else:
+                logger.error("err in args")
+                self.__printUseMethod()
+                sys.exit(1)
+
+        if self.pkgname == "":
+            logger.error("package name is necessary")
+            self.__printUseMethod()
+            sys.exit(1)
+
+        # 设置计时器
+        if self.monkeyTime != 0:
+            self.timer = Timer(duration=self.monkeyTime)
+
+        if self.udid == "":
+            self.udid = [line.split('\t')[0] for line in
+                         os.popen("adb devices", 'r', 1).read().split('\n') if
+                         len(line) != 0 and line.find('\tdevice') != -1][0]
+            if self.udid == "":
+                logger.error("no available devices")
+                sys.exit(1)
+
+        self.device = DeviceConnect(self.udid)
+
+        # APK_FILE不为空，表示需要从指定路径安装app
+        if self.apkFilePath is not "":
+            try:
+                self.device.installApk(self.pkgname, self.apkFilePath)
+            except Exception as e:
+                logger.warning("err in install app %s from %s, Exception: %s", (self.pkgname, self.apkFilePath, e))
+                traceback.print_exc()
+                deleteFile('tmp_%s.apk' % self.pkgname)
                 return
-        except Exception as e:
-            logger.warning("err in install app %s from %s, Exception: %s", (PACKAGE_NAME, APK_FILE, e))
-            traceback.print_exc()
-            device.deleteInstallFile()
+
+        pass
+
+    def __printUseMethod(self):
+        print("UIDump.py -p <app-package-name> [-t] <dump-interval> "
+              "[-f] <apk-file-path> [-m] <monkey-run-time> [-o] <output-path>")
+        print("arguments : ")
+        print("-p --package\tinput app is necessary, such as \"-p com.tencent.mm\"")
+        print("-t --interval\tdump interval, default is 1s, \"-t 2\"")
+        print("-f --apkfile\tapk file path, if the app isn't installed, "
+              "you can specify the apk file path, such as '/home/user/a.apk' or 'http://127.0.0.1:8000/user/a.apk")
+        print("-m --monkeytime\t monkey run time, if it isn't specified, you can dump through manual operation")
+        print("-o --output\t output path, default is ./output/record")
+
+        pass
+
+    def startUIDump(self):
+
+        logger.info("start record mode, the package is %s and dump interval is %d" % (self.pkgname, self.dumpInterval))
+
+        self.startRecord()
+
+        if self.apkFilePath is not "":
+            self.device.uninstallApk(self.pkgname)
+
+        pass
+
+    def startRecord(self):
+
+        if self.pkgname == "":
+            logger.error("no input package name")
             return
 
-    recordOpt(device, PACKAGE_NAME, DUMP_INTERVAL)
+        if self.pkgname not in self.device.getInstalledApps():
+            logger.error("%s is not installed" % self.pkgname)
+            return
 
-    if APK_FILE is not "":
-        device.uninstallApk(PACKAGE_NAME)
+        timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
+        outputpath = os.path.join(self.recordOutPath, self.pkgname + "_" + timestamp)
 
-    pass
+        if not os.path.exists(outputpath):
+            os.makedirs(outputpath)
 
+        # 初始化frida
+        ch = CallerHook(self.pkgname, outputpath)
+        # 设置回调事件
+        self.device.startWatchers()
 
-def recordOpt(device, pkgname="", interval=1, outputpath=""):
-    if pkgname == "":
-        logger.error("no input package name")
-        return
+        if self.timer is None:
+            # 没设置Timer, 人工跑APP还是用home键退出脚本
+            stopcondition = self.device.getCurrentApp()
+            while stopcondition is "":
+                stopcondition = self.device.getCurrentApp()
+            self.timer = Timer(stopcondition=stopcondition, device=self.device)
 
-    timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
-    if outputpath == "":
-        outputpath = os.path.join(RECORD_ROOT_PATH, pkgname + "_" + timestamp)
+        self.device.pressHome()
+        dumpcount = 1
+        time.sleep(1)
 
-    if not os.path.exists(outputpath):
-        os.makedirs(outputpath)
+        # 目前先利用frida孵化进程 有bug，用Monkey起
+        self.device.startApp(self.pkgname)
+        ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
+        time.sleep(5)  # 有时候app界面还没加载出来，等5s
 
-    # 初始化frida
-    ch = CallerHook(pkgname, outputpath)
-    # 设置回调事件
-    device.startWatchers()
-    # 设置计时器
-    if MONKEY_TIME != 0:
-        timer = Timer(duration=MONKEY_TIME)
-    else:
-        # 人工跑APP还是用home键退出脚本
-        stopcondition = device.getCurrentApp()
-        while stopcondition is "":
-            stopcondition = device.getCurrentApp()
-        timer = Timer(stopcondition=stopcondition)
+        # 如果设置了MONKEY_TIME，启动monkey
+        monkey = None
+        if self.monkeyTime != 0 and self.device.getAppInstallStatus():
+            monkey = Monkey(udid=self.udid, pkgname=self.pkgname, timeInterval=MONKEY_TIME_INTERVAL, outdir=outputpath)
+            monkey.startMonkey()
 
-    device.pressHome()
-    dumpcount = 1
-    time.sleep(1)
+        # 启动计时器
+        self.timer.start()
+        # 异常重启次数，有些app确实起不起来，最多重启3次
+        errRestartCount = 0
+        # 等待启动之后再轮询判断是否已经退出
+        while True:
+            if not self.device.isAppRun(self.pkgname):
+                logger.info("app %s is not running " % self.pkgname)
+                # 清一下白名单APP，防止对后续dump造成影响
+                # device.stopApp()
+                if monkey is not None:
+                    monkey.stopMonkey()
+                # 如果app异常退出，且计时未结束重启app
+                # getAppInstallStatus 避免当前app因为apk问题导致反复重启
+                if not self.timer.isFinish() and self.device.getAppInstallStatus() and errRestartCount < 3:
+                    errRestartCount += 1
+                    logger.warning("Abnormal termination in app running, restart, count = %d" % errRestartCount)
+                    self.device.closeWatchers()
+                    self.device.startWatchers()
+                    self.device.startApp(self.pkgname)
+                    ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
+                    time.sleep(5)
+                    monkey.startMonkey()
+                    continue
 
-    # 目前先利用frida孵化进程
-    ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
-    time.sleep(5)  # 有时候app界面还没加载出来，等5s
+                self.device.stopApp(self.pkgname)
+                logger.info(self.pkgname + " is canceled, stop record, with restart count = %d" % errRestartCount)
+                # ch.stop_hook()
+                self.device.pressHome()
+                break
+            logger.info("dump %s UI" % str(dumpcount))
+            self.device.dumpUI(outputpath, dumpcount)
+            dumpcount += 1
+            time.sleep(self.dumpInterval)
+            if self.timer.isFinish():
+                if monkey is not None:
+                    monkey.stopMonkey()
+                self.device.stopApp(self.pkgname)
+                self.device.pressHome()
 
-    # 如果设置了MONKEY_TIME，启动monkey
-    monkey = None
-    if MONKEY_TIME != 0 and device.getAppInstallStatus():
-        monkey = MonkeyOpt(udid=device.udid, pkgname=pkgname, timeinterval=800)
-        monkey.startMonkey()
+        self.device.closeWatchers()
+        time.sleep(5)
 
-    # 启动计时器
-    timer.start()
-    # 异常重启次数，有些app确实起不起来，最多重启3次
-    err_restart_count = 0
-    # 等待启动之后再轮询判断是否已经退出
-    while True:
-        if not device.isAppRun(pkgname):
+        if not self.device.getAppInstallStatus():
+            import shutil
+            shutil.rmtree(outputpath)
+            logger.warning("err in apk, pass the case")
+        else:
+            logger.info("the output saved in " + outputpath)
 
-            # 清一下白名单APP，防止对后续dump造成影响
-            # device.stopApp()
-            if monkey is not None:
-                monkey.stopMonkey()
-            # 如果app异常退出，且计时未结束重启app
-            # getAppInstallStatus 避免当前app因为apk问题导致反复重启
-            if not timer.isFinish() and device.getAppInstallStatus() and err_restart_count < 3:
-                err_restart_count += 1
-                logger.warning("Abnormal termination in app running, restart, count = %d" % err_restart_count)
-                device.closeWatchers()
-                device.startWatchers()
-                ch.run_and_start_hook(os.path.join("OneForAllHook", "_agent.js"))
-                time.sleep(5)
-                monkey.startMonkey()
-                continue
-
-            device.stopApp(pkgname)
-            logger.info(pkgname + " is canceled, stop record, with restart count = %d" % err_restart_count)
-            ch.stop_hook()
-            device.pressHome()
-            break
-        logger.info("dump %s UI" % str(dumpcount))
-        device.dumpUI(outputpath, dumpcount)
-        dumpcount += 1
-        time.sleep(interval)
-        if timer.isFinish():
-            if monkey is not None:
-                monkey.stopMonkey()
-            device.stopApp(pkgname)
-            device.pressHome()
-
-    device.closeWatchers()
-    time.sleep(5)
-
-    if not device.getAppInstallStatus():
-        import shutil
-        shutil.rmtree(outputpath)
-        logger.warning("err in apk, pass the case")
-    else:
-        logger.info("the output saved in " + outputpath)
-
-    pass
-
-
-def printUseMethod():
-    print("UIDump.py -p <app-package-name> [-t] <dump-interval> "
-          "[-f] <apk-file-path> [-m] <monkey-run-time> [-o] <output-path>")
-    print("arguments : ")
-    print("-p --package\tinput app is necessary, such as \"-p com.tencent.mm\"")
-    print("-t --interval\tdump interval, default is 1s, \"-t 2\"")
-    print("-f --apkfile\tapk file path, if the app isn't installed, "
-          "you can specify the apk file path, such as '/home/user/a.apk' or 'http://127.0.0.1:8000/user/a.apk")
-    print("-m --monkeytime\t monkey run time, if it isn't specified, you can dump through manual operation")
-    print("-o --output\t output path, default is ./output/record")
+        pass
 
 
 if __name__ == "__main__":
-    startUIDump(sys.argv[1:])
+    ud = UIDump(sys.argv[1:])
+    ud.startUIDump()

@@ -87,19 +87,25 @@ class CallerHook:
         else:
             printError(message)
 
-    def start_hook(self, script_path):
+    def start_hook(self, script_path, udid=""):
         """
         直接hook进程
+        :param udid:
         :param script_path:
         :return:
         """
         try:
-            signal.signal(signal.SIGINT, quit)
-            signal.signal(signal.SIGTERM, quit)
+            # signal.signal(signal.SIGINT, quit)
+            # signal.signal(signal.SIGTERM, quit)
             # 加载Frida
             with open(script_path, encoding='utf-8') as f:
                 jscode = f.read()
-            self.process = frida.get_usb_device().attach(self.package_name)
+
+            if udid == "":
+                device = frida.get_usb_device()
+            else:
+                device = frida.get_device_manager().get_device(udid)
+            self.process = device.attach(self.package_name)
             self.process.enable_debugger()
             self.script = self.process.create_script(jscode, runtime="v8")
             self.script.on('message', self.on_message)
@@ -111,9 +117,10 @@ class CallerHook:
             print(e.args)
         pass
 
-    def run_and_start_hook(self, script_path):
+    def run_and_start_hook(self, script_path, udid=""):
         """
         启动APP进程并hook
+        :param udid:
         :param script_path:
         :return:
         """
@@ -124,7 +131,10 @@ class CallerHook:
             with open(script_path, encoding='utf-8') as f:
                 jscode = f.read()
 
-            device = frida.get_usb_device()
+            if udid == "":
+                device = frida.get_usb_device()
+            else:
+                device = frida.get_device_manager().get_device(udid)
             pid = device.spawn([self.package_name])
             self.process = device.attach(pid)
             self.script = self.process.create_script(jscode)

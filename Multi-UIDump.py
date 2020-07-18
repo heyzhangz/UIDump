@@ -3,7 +3,7 @@ import os
 import re
 import traceback
 
-from UIDump import startUIDump
+from src.Distribute import Dispatch, App
 
 
 def readAPPList(filepath):
@@ -15,23 +15,28 @@ def readAPPList(filepath):
         return resjson
 
 
+class UIDumpTask:
+
+    def __init__(self):
+        self.apkList = []
+        # json格式 按类别划分
+        resjson = readAPPList(os.path.join(os.path.abspath("."), "category_top.json"))
+        for _, arr in resjson.items():
+            for apkpath in arr:
+                pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
+                newpath = 'http://10.141.209.136:8002/' + apkpath[6:]
+                self.apkList.append(App(pkgname=pkgname, apkpath=newpath))
+
+        self.udids = [line.split('\t')[0] for line in
+                      os.popen("adb devices", 'r', 1).read().split('\n') if
+                      len(line) != 0 and line.find('\tdevice') != -1]
+
+    def dispatch(self):
+        dispatch = Dispatch.start(appQueue=self.apkList, udidList=self.udids)
+        while not dispatch.is_alive:
+            pass
+
+
 if __name__ == "__main__":
-    resjson = readAPPList(os.path.join(os.path.abspath("."), "category_top.json"))
-    print(resjson)
-
-    for k, arr in resjson.items():
-        # if k == 'Photography':
-        #     continue
-        category = k
-        for apkpath in arr[:10]:
-            pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
-            newpath = 'http://10.141.209.136:8002/' + apkpath[6:]
-            RECORD_ROOT_PATH = os.path.join(".", "output", "record", category)
-
-            try:
-                startUIDump(['-p', pkgname, '-m', "1800000", '--apkfile', newpath, '-o', RECORD_ROOT_PATH])
-                # startUIDump(['-p', pkgname, '-m', "18000", '--apkfile', newpath, '-o', RECORD_ROOT_PATH])
-            except Exception as e:
-                print("[Error] UIDump " + pkgname + " failed")
-                print(e)
-                print(traceback.format_exc())
+    udt = UIDumpTask()
+    udt.dispatch()
