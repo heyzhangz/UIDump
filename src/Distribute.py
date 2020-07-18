@@ -1,13 +1,11 @@
-import os
 import pykka
 import time
-import logging
 
 from UIDump import UIDump
 from lib.Logger import logger
 
 
-class App():
+class App:
 
     def __init__(self, pkgname, apkpath):
         self.pkgname = pkgname

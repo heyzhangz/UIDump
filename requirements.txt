@@ -1,0 +1,3 @@
+frida==12.8.20
+uiautomator2==2.9.7.dev1
+Pykka==2.0.0

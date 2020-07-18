@@ -1,7 +1,6 @@
 import os
 import subprocess
 import time
-import traceback
 import urllib.request
 
 import uiautomator2
