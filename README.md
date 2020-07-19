@@ -12,26 +12,38 @@ py UIDump.py -p <app-package-name> [-f <apk-file-path>] [-m <monkey-run-time>] [
 
 ```
 
-#### 半自动Dump
-在该模式下，需要人为手动触发相关场景，按"home"键停止Dump。
+#### 半自动单任务Dump
+在该模式下，需要人为手动触发相关场景，按"home"键停止Dump，结果保存在`output/record/`目录下<br>
 ```
 py ./UIDump.py -p com.tencent.mm
 ```
 
-#### 全自动Dump
-**需要指定 -m 参数开启改模式**
-在该模式下，采用monkey代替手动触发相关场景。
-因为monkey需要白名单来指定可触发的package范围，如需补充可扩展`./monkey_pkg_whitelist.txt`文件
+#### 全自动单任务Dump
+**需要指定 -m 参数开启改模式**<br>
+在该模式下，采用monkey代替手动触发相关场景，结果保存在`output/record/`目录下<br>
+因为monkey需要白名单来指定可触发的package范围，如需补充可扩展`./monkey_pkg_whitelist.txt`文件<br>
 
 ```
 py ./UIDump.py -p com.tencent.mm -m 1800000
 ```
 
-#### 批量全自动Dump
-**TODO**
-目前流程比较简单，就是读取app目录，逐个调用全自动的UIDump，具体运行参数可以在脚本中直接修改
+#### 多任务Dump
+**该模式需要指定GlogalConfig.py对应参数**<br>
+在该模式下，会利用多设备以及app列表来自动化批量Dump，结果保存在`output/record/`目录下，日志保存在`output/log/`目录下。<br>
+`Dispatch-` 开头为分发脚本日志<br>
+`UIDump-` 开头为该app的Dump日志<br>
+<br>
+运行结束在根目录会生成两个文件；<br>
+`err_app_list.json` 为本次运行失败的app列表<br>
+`remain_app_list.json` 为未运行app列表<br>
+<br>
+参数列表：<br>
+`MONKEY_TIME : monkey运行时间`<br>
+`DEVICE_LIST : 可选择设备列表，设为空列表或者None则表示可以使用全部在线设备`<br>
+`APP_LIST_PATH : app list 文件路径，注意目前格式和category_top.json格式类似，替换列表文件时注意修改下Muliti-UIDump.py的读取逻辑，稳定后统一格式`<br>
 
 ```
 py ./Multi-UIDump.py
 ```
+
 
