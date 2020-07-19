@@ -60,12 +60,8 @@ class Monkey:
     def stopMonkey(self):
 
         for i in range(10):
-            output = None
             cmd_pid = ["adb", "-s", self.udid, "shell", "ps", "|", "grep", "monkey"]
-            try:
-                output = subprocess.check_output(cmd_pid).decode()
-            except Exception:
-                logger.info("monkey stop error")
+            output = subprocess.check_output(cmd_pid).decode()
 
             if output == '':
                 logger.info("No monkey running")
