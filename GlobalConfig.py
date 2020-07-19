@@ -1,19 +1,20 @@
 import logging
 import os
 
+# 路径peizhi
 BASE_PATH = os.path.dirname(__file__)
-DEPENDENCY_PATH = os.path.join(BASE_PATH, 'dependency')
-RECORD_OUTPUT_PATH = os.path.join(BASE_PATH, "output", "record")
-LOG_OUTPUT_PATH = os.path.join(BASE_PATH, "output", "log")
+DEPENDENCY_PATH = os.path.join(BASE_PATH, 'dependency')  # 依赖文件路径
+RECORD_OUTPUT_PATH = os.path.join(BASE_PATH, "output", "record")  # dump结果路径
+LOG_OUTPUT_PATH = os.path.join(BASE_PATH, "output", "log")  # 日志路径
 
 # 框架配置
-DUMP_INTERVAL = 1
-UI_WATCHER_TIME_INTERVAL = 1
-MONKEY_TIME = 3600
+DUMP_INTERVAL = 1  # dump时间间隔
+UI_WATCHER_TIME_INTERVAL = 1  # UI watcher 监控分析间隔
 
 # 多任务模式配置
-DEVICE_LIST = []
-APP_LIST_PATH = os.path.join(BASE_PATH, "category_top_bak.json")
+MONKEY_TIME = 3600  # monkey运行时间，毫秒（该参数只影响多任务模式）
+DEVICE_LIST = []  # 可选设备列表
+APP_LIST_PATH = os.path.join(BASE_PATH, "category_top.json")  # app list 文件路径（TODO 注意Multi-UIDump.py文件读取格式可能也要改）
 
 # 信息收集模块配置
 SCREENSHOT_FILE_NAME = "screenshot.jpg"
