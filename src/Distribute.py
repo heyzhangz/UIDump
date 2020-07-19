@@ -14,6 +14,7 @@ class App:
 class Dispatch(pykka.ThreadingActor):
 
     def __init__(self, logger, appQueue: list, udidList: list):
+
         super(Dispatch, self).__init__()
         self.appQueue = appQueue
         self.aliveWorkers = []
@@ -21,46 +22,42 @@ class Dispatch(pykka.ThreadingActor):
         self.udids = udidList
         self.logger = logger
 
-        self.record = {}
-        if self.appQueue:
-            for udid in self.udids:
-                worker = Worker.start(name='worker-%s' % udid, udid=udid)
-                self.record[worker] = udid
-                self.aliveWorkers.append(worker)
-
-            self.logger.info('Begin dispatch...')
-
-            for worker in self.aliveWorkers:
+        self.logger.info('Begin dispatch task')
+        for udid in self.udids:
+            worker = Worker.start(name='worker-%s' % udid, udid=udid, logger=self.logger)
+            if self.appQueue:
                 app = self.appQueue.pop()
-                self.logger.info('Dispatch worker-%s : %s' % (self.record[worker], app.pkgname))
+                self.logger.info('Dispatch worker-%s : %s' % (udid, app.pkgname))
                 worker.tell({'apkpath': app.apkpath, 'pkgname': app.pkgname, 'currentworker': self.actor_ref})
+                self.aliveWorkers.append(worker)
+            else:
+                self.logger.warning('Apps is less than workers')
+                break
 
-            self.aliveWorkersNum = len(self.aliveWorkers)
-            self.logger.info('Workers num: %s' % self.aliveWorkersNum)
-        else:
-            self.logger.error('App list is empty! End!')
-            self.stop()
+        self.logger.info('Workers num: %s' % len(self.aliveWorkers))
+
+        pass
 
     def on_receive(self, message: dict):
 
-        return_worker = message.get('worker')
-        error_flag = message.get('iserror')
-        if error_flag:
-            self.logger.error('%s finish testing %s with error!' % (return_worker.name, return_worker.pkgname))
+        returnWorker = message.get('worker')
+        errorFlag = message.get('iserror')
+        if errorFlag:
+            self.logger.error('%s finish testing %s with error!' % (returnWorker.name, returnWorker.pkgname))
             # self.appQueue.append(return_worker.app)
+            # TODO record
         else:
-            self.logger.info('%s finish testing %s!' % (return_worker.name, return_worker.pkgname))
+            self.logger.info('%s finish testing %s!' % (returnWorker.name, returnWorker.pkgname))
 
-        if len(self.appQueue) > 0:
-            # Stop using the device
+        if self.appQueue:
             app = self.appQueue.pop()
-            self.logger.info('Dispatch %s : %s' % (return_worker.name, app.pkgname))
-            return_worker.actor_ref.tell(
+            self.logger.info('Dispatch %s : %s' % (returnWorker.name, app.pkgname))
+            returnWorker.actor_ref.tell(
                 {'apkpath': app.apkpath, 'pkgname': app.pkgname, 'currentworker': self.actor_ref})
         else:
-            self.logger.info('app queue is empty. Stop %s' % return_worker.name)
-            return_worker.actor_ref.stop()
-            self.aliveWorkers.remove(return_worker)
+            self.logger.info('app queue is empty. Stop %s' % returnWorker.name)
+            returnWorker.actor_ref.stop()
+            self.aliveWorkers.remove(returnWorker)
             if len(self.aliveWorkers) == 0:
                 self.logger.info('No living worker, stop dispatcher!')
                 end_time = time.time()
@@ -74,12 +71,13 @@ class Dispatch(pykka.ThreadingActor):
 
 class Worker(pykka.ThreadingActor):
 
-    def __init__(self, name: str, udid: str):
+    def __init__(self, name: str, udid: str, logger):
         super(Worker, self).__init__()
         self.name = name
         self.udid = udid
         self.apkPath = ''
         self.pkgname = ''
+        self.logger = logger
 
     def on_receive(self, message: dict):
         self.apkPath = message.get('apkpath')
@@ -91,8 +89,7 @@ class Worker(pykka.ThreadingActor):
             ud = UIDump(['-p', self.pkgname, '-m', "36000", '--apkfile', self.apkPath, '-d', self.udid])
             ud.startUIDump()
         except Exception as e:
-            print(e)
-            print("[Error] UIDump " + self.pkgname + " failed")
+            self.logger.error("UIDump " + self.pkgname + " failed, reason : " + e)
             is_error = True
             time.sleep(120)
         else:

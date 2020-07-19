@@ -119,16 +119,23 @@ class UIDump:
 
     def startUIDump(self):
 
-        self.logger.info("start record mode, the package is %s and dump interval is %d" % (self.pkgname, self.dumpInterval))
+        self.logger.info("start record mode, the package is %s and dump interval is %d"
+                         % (self.pkgname, self.dumpInterval))
 
-        self.startRecord()
+        timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
+        self.logger.info("log start at %s" % timestamp)
+
+        self.startRecord(timestamp)
 
         if self.apkFilePath is not "":
             self.device.uninstallApk(self.pkgname)
 
+        timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
+        self.logger.info("log end at %s\r\n\r\n" % timestamp)
+
         pass
 
-    def startRecord(self):
+    def startRecord(self, timestamp):
 
         if self.pkgname == "":
             self.logger.error("no input package name")
@@ -138,10 +145,7 @@ class UIDump:
             self.logger.error("%s is not installed" % self.pkgname)
             return
 
-        timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
         outputpath = os.path.join(self.recordOutPath, self.pkgname + "_" + timestamp)
-
-        self.logger.info("log start at %s" % timestamp)
 
         if not os.path.exists(outputpath):
             os.makedirs(outputpath)
@@ -223,8 +227,6 @@ class UIDump:
             self.logger.warning("err in apk, pass the case")
         else:
             self.logger.info("the output saved in " + outputpath)
-
-        self.logger.info("log end\r\n\r\n")
 
         pass
 
