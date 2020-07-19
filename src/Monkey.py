@@ -1,7 +1,6 @@
 import os
 import re
 import subprocess
-import time
 
 from GlobalConfig import MONKEY_WHITE_LIST_PATH, MONKEY_LOG_NAME, MONKEY_TIME_INTERVAL, MONKEY_WHITE_LIST_NAME
 

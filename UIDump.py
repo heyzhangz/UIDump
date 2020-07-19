@@ -203,6 +203,8 @@ class UIDump:
                     self.device.startApp(self.pkgname)
                     # ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
                     time.sleep(5)
+                    monkey = Monkey(logger=self.logger, udid=self.udid, pkgname=self.pkgname,
+                                    timeInterval=MONKEY_TIME_INTERVAL, outdir=outputpath)
                     monkey.startMonkey()
                     continue
 
