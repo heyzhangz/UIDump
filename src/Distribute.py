@@ -44,8 +44,8 @@ class Dispatch(pykka.ThreadingActor):
     def on_receive(self, message: dict):
 
         returnWorker = message.get('worker')
-        errorFlag = message.get('iserror')
-        if errorFlag:
+        ret = message.get('isok')
+        if not ret:
             self.logger.error('%s finish testing %s with error!' % (returnWorker.name, returnWorker.pkgname))
             # self.appQueue.append(return_worker.app)
             self.errorAppList[returnWorker.udid].append([returnWorker.pkgname, returnWorker.apkPath])
@@ -54,7 +54,7 @@ class Dispatch(pykka.ThreadingActor):
 
         if self.appQueue:
             app = self.appQueue.pop()
-            self.logger.info('Dispatch %s : %s' % (returnWorker.name, app.pkgname))
+            self.logger.info('Dispatch %s : %s' % (returnWorker.name, app['pkgname']))
             returnWorker.actor_ref.tell({'downloadpath': app['downloadpath'],
                                          'pkgname': app['pkgname'],
                                          'currentworker': self.actor_ref})
@@ -98,14 +98,12 @@ class Worker(pykka.ThreadingActor):
 
         try:
             ud = UIDump(['-p', self.pkgname, '-m', str(MONKEY_TIME), '--apkfile', self.apkPath, '-d', self.udid])
-            ud.startUIDump()
+            isok = ud.startUIDump()
         except Exception as e:
             self.logger.error("UIDump %s failed, reason : %s" % (self.pkgname, e))
-            is_error = True
+            isok = False
             time.sleep(120)
-        else:
-            is_error = False
 
-        currentWork.tell({'worker': self, 'iserror': is_error})
+        currentWork.tell({'worker': self, 'isok': isok})
 
         pass

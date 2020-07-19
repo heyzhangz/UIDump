@@ -10,7 +10,7 @@ def initLogger(loggerName=None, outputPath=None):
 
     logLevel = LOG_LEVEL
     formatter = logging.Formatter(fmt='(%(asctime)s)-[%(levelname)s] - %(filename)s[l:%(lineno)d] : %(message)s',
-                                  datefmt='%Y%m%d%H%M')
+                                  datefmt='%Y%m%d:%H%M%S')
 
     printHandler = logging.StreamHandler()
     printHandler.setFormatter(formatter)

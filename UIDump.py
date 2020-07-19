@@ -124,7 +124,11 @@ class UIDump:
         timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
         self.logger.info("log start at %s" % timestamp)
 
-        self.startRecord(timestamp)
+        ret = True
+        try:
+            ret = self.startRecord(timestamp)
+        except Exception as e:
+            self.logger.error("err in dump %s, Reason: %s" % (self.pkgname, e))
 
         if self.apkFilePath is not "":
             self.device.uninstallApk(self.pkgname)
@@ -132,7 +136,7 @@ class UIDump:
         timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
         self.logger.info("log end at %s\r\n" % timestamp)
 
-        pass
+        return ret
 
     def startRecord(self, timestamp):
 
@@ -224,10 +228,16 @@ class UIDump:
             import shutil
             shutil.rmtree(outputpath)
             self.logger.warning("err in apk, pass the case")
+            return False
+        elif errRestartCount >= 3:
+            import shutil
+            shutil.rmtree(outputpath)
+            self.logger.warning("app restart more than 3 times, pass the case")
+            return False
         else:
             self.logger.info("the output saved in " + outputpath)
 
-        pass
+        return True
 
 
 if __name__ == "__main__":
