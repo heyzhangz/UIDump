@@ -1,25 +1,26 @@
 import os
 import subprocess
 import time
+import traceback
 import urllib.request
 
 import uiautomator2
 
 from GlobalConfig import SCREENSHOT_FILE_NAME, LAYOUT_FILE_NAME, UI_WATCHER_TIME_INTERVAL
 from lib.Common import deleteFile
-from lib.Logger import logger
 
 
 class DeviceConnect:
 
-    def __init__(self, udid: str = ""):
+    def __init__(self, logger, udid: str = ""):
 
         self.udid = udid
+        self.logger = logger
         if self.udid is not "":
-            logger.info("init uiautomatior2 in %s" % self.udid)
+            self.logger.info("init uiautomatior2 in %s" % self.udid)
             self.device = uiautomator2.connect(udid)
         else:
-            logger.info("init uiautomatior2 in default device")
+            self.logger.info("init uiautomatior2 in default device")
             self.device = uiautomator2.connect()
 
         self.appInstallStatus = True  # app安装状态
@@ -53,7 +54,7 @@ class DeviceConnect:
 
     def startApp(self, pkgname=""):
 
-        logger.info("start app: " + pkgname)
+        self.logger.info("start app: " + pkgname)
         self.device.app_start(pkgname, use_monkey=True)
 
         time.sleep(1)
@@ -61,7 +62,7 @@ class DeviceConnect:
 
     def stopApp(self, pkgname=""):
 
-        logger.info("stop app: " + pkgname)
+        self.logger.info("stop app: " + pkgname)
         self.device.app_stop(pkgname)
         self.device.app_clear(pkgname)
 
@@ -82,7 +83,7 @@ class DeviceConnect:
         try:
             curapp = self.device.app_current()
         except OSError:
-            logger.error("Couldn't get focused app")
+            self.logger.error("Couldn't get focused app")
 
         return curapp
 
@@ -92,12 +93,12 @@ class DeviceConnect:
 
     def installApk(self, pkgname, remoteApkPath=""):
 
-        logger.info("start install " + pkgname)
+        self.logger.info("start install " + pkgname)
         if remoteApkPath == "":
             raise Exception("apkpath is null!")
 
         if remoteApkPath.startswith("http"):
-            logger.info('download apk from %s' % remoteApkPath)
+            self.logger.info('download apk from %s' % remoteApkPath)
             urllib.request.urlretrieve(remoteApkPath, 'tmp_%s.apk' % pkgname)
             remoteApkPath = 'tmp_%s.apk' % pkgname
 
@@ -107,19 +108,25 @@ class DeviceConnect:
         if pkgname not in self.getInstalledApps():
             raise Exception("app install failed! reason: %s" % output)
 
-        logger.info("app: %s installed successfully." % pkgname)
+        self.logger.info("app: %s installed successfully." % pkgname)
         pass
 
     def uninstallApk(self, pkgname):
 
-        logger.info("start uninstall " + pkgname)
+        self.logger.info("start uninstall " + pkgname)
         status = self.device.app_uninstall(pkgname)
         if status:
-            logger.info("finish uninstall " + pkgname)
+            self.logger.info("finish uninstall " + pkgname)
         else:
-            logger.warning("err in uninstall %s, please check" % pkgname)
+            self.logger.warning("err in uninstall %s, please check" % pkgname)
 
-        deleteFile('tmp_%s.apk' % pkgname)
+        delFilePath = 'tmp_%s.apk' % pkgname
+        try:
+            self.logger.info("delete file %s" % delFilePath)
+            deleteFile(delFilePath)
+        except Exception as ee:
+            self.logger.warning("delete %s failed! %s" % (delFilePath, ee))
+            traceback.print_exc()
         pass
 
     def getAppInstallStatus(self):

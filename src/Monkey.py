@@ -4,17 +4,17 @@ import subprocess
 import time
 
 from GlobalConfig import MONKEY_WHITE_LIST_PATH, MONKEY_LOG_NAME, MONKEY_TIME_INTERVAL, MONKEY_WHITE_LIST_NAME
-from lib.Logger import logger
 
 
 class Monkey:
 
-    def __init__(self, outdir, udid="", timeInterval=MONKEY_TIME_INTERVAL, pkgname=""):
+    def __init__(self, logger, outdir, udid="", timeInterval=MONKEY_TIME_INTERVAL, pkgname=""):
 
         if udid == "":
             raise Exception("no target device in monkey")
         self.udid = udid
-        logger.info("init monkey in %s" % self.udid)
+        self.logger = logger
+        self.logger.info("init monkey in %s" % self.udid)
         self.timeInterval = timeInterval
         self.packagename = pkgname
         self.logdir = outdir
@@ -36,7 +36,7 @@ class Monkey:
 
     def __pushWhiteList(self):
 
-        logger.info("push white list to /data/local/tmp/")
+        self.logger.info("push white list to /data/local/tmp/")
         pushcmd = 'adb -s %s push %s /data/local/tmp/' \
                   % (self.udid, os.path.join(os.path.abspath('.'), MONKEY_WHITE_LIST_PATH))
         subprocess.Popen(pushcmd, shell=True)
@@ -64,12 +64,12 @@ class Monkey:
             output = subprocess.check_output(cmd_pid).decode()
 
             if output == '':
-                logger.info("No monkey running")
+                self.logger.info("No monkey running")
                 break
             else:
                 output = re.search('shell {5}[0-9]+', output).group()
                 pid = re.search('[0-9]+', output).group()
-                logger.info("kill the monkey process: %s" % pid)
+                self.logger.info("kill the monkey process: %s" % pid)
                 subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
 
         time.sleep(2)
