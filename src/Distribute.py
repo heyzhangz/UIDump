@@ -55,8 +55,9 @@ class Dispatch(pykka.ThreadingActor):
         if self.appQueue:
             app = self.appQueue.pop()
             self.logger.info('Dispatch %s : %s' % (returnWorker.name, app.pkgname))
-            returnWorker.actor_ref.tell(
-                {'apkpath': app.apkpath, 'pkgname': app.pkgname, 'currentworker': self.actor_ref})
+            returnWorker.actor_ref.tell({'downloadpath': app['downloadpath'],
+                                         'pkgname': app['pkgname'],
+                                         'currentworker': self.actor_ref})
         else:
             self.logger.info('app queue is empty. Stop %s' % returnWorker.name)
             returnWorker.actor_ref.stop()
