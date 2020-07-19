@@ -69,7 +69,8 @@ class Monkey:
         if output == '':
             self.logger.info("No monkey running")
         else:
-            pid = re.search('shell +([0-9]+)', output).group(1)
+            # 全是坑 有shell 有root的
+            pid = re.search('\\S+ +([0-9]+)', output).group(1)
             self.logger.info("kill the monkey process: %s" % pid)
             subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
             return True
