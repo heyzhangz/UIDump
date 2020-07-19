@@ -21,6 +21,7 @@ class UIDump:
         self.pkgname = ""
         self.dumpInterval = DUMP_INTERVAL
         self.apkFilePath = ""
+        self.monkeyMode = False
         self.monkeyTime = MONKEY_TIME
         self.recordOutPath = RECORD_OUTPUT_PATH
         self.device = None
@@ -34,8 +35,8 @@ class UIDump:
     def __getConfig(self, argv):
 
         try:
-            opts, args = getopt.getopt(argv, "p:t:f:m:o:d:",
-                                       ["package=", "interval=", "apkfile=", "monkeytime=", "output=", "device="])
+            opts, args = getopt.getopt(argv, "p:f:m:o:d:",
+                                       ["package=", "apkfile=", "monkeytime=", "output=", "device="])
         except getopt.GetoptError:
             self.__printUseMethod()
             sys.exit(2)
@@ -46,12 +47,11 @@ class UIDump:
                 sys.exit()
             elif opt in ("-p", "--package"):
                 self.pkgname = arg
-            elif opt in ("-t", "--interval"):
-                self.dumpInterval = int(arg)
             elif opt in ("-f", "--apkfile"):
                 self.apkFilePath = arg
             elif opt in ("-m", "--monkeytime"):
                 self.monkeyTime = int(arg)
+                self.monkeyMode = True
             elif opt in ("-o", "--output"):
                 self.recordOutPath = arg
                 if not os.path.exists(self.recordOutPath):
@@ -73,7 +73,7 @@ class UIDump:
                                  outputPath=os.path.join(LOG_OUTPUT_PATH, "UIDump_%s.log" % self.pkgname))
 
         # 设置计时器
-        if self.monkeyTime != 0:
+        if self.monkeyMode:
             self.timer = Timer(logger=self.logger, duration=self.monkeyTime)
 
         if self.udid == "":
@@ -109,7 +109,6 @@ class UIDump:
               "[-f] <apk-file-path> [-m] <monkey-run-time> [-o] <output-path>")
         print("arguments : ")
         print("-p --package\tinput app is necessary, such as \"-p com.tencent.mm\"")
-        print("-t --interval\tdump interval, default is 1s, \"-t 2\"")
         print("-f --apkfile\tapk file path, if the app isn't installed, "
               "you can specify the apk file path, such as '/home/user/a.apk' or 'http://127.0.0.1:8000/user/a.apk")
         print("-m --monkeytime\t monkey run time, if it isn't specified, you can dump through manual operation")
@@ -173,7 +172,7 @@ class UIDump:
 
         # 如果设置了MONKEY_TIME，启动monkey
         monkey = None
-        if self.monkeyTime != 0 and self.device.getAppInstallStatus():
+        if self.monkeyMode and self.device.getAppInstallStatus():
             monkey = Monkey(logger=self.logger, udid=self.udid, pkgname=self.pkgname,
                             timeInterval=MONKEY_TIME_INTERVAL, outdir=outputpath)
             monkey.startMonkey()

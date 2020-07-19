@@ -2,10 +2,9 @@
 
 #### 使用
 ```
-py UIDump.py -p <app-package-name> [-t <dump-interval>] [-f <apk-file-path>] [-m <monkey-run-time>] [-o <output-path>] [-d <device-id>]
+py UIDump.py -p <app-package-name> [-f <apk-file-path>] [-m <monkey-run-time>] [-o <output-path>] [-d <device-id>]
 
 	-p --package <app-package-name> 用来Dump数据的app包名
-	-t --interval <dump-interval> Dump UI 的时间间隔，默认是1s
 	-f --apkfile <apk-file-path> 待安装的apk文件路径，需要和-p指定的app包名一致，支持url。
 	-m --monkeytime <monkey-run-time> 设置monkey运行的毫秒数，指定该参数的话为全自动模式，monkey计时结束停止录制；未指定该参数为半自动模式，手动操作，按"home"键停止Dump。
 	-o --output <output-path> Dump数据的输出路径，默认输出路径为./output/record

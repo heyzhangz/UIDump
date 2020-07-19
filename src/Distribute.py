@@ -1,6 +1,7 @@
 import pykka
 import time
 
+from GlobalConfig import MONKEY_TIME
 from UIDump import UIDump
 
 
@@ -85,8 +86,7 @@ class Worker(pykka.ThreadingActor):
         currentWork = message.get('currentworker')
 
         try:
-            # ud = UIDump(['-p', self.pkgname, '-m', "1800000", '--apkfile', self.apkPath])
-            ud = UIDump(['-p', self.pkgname, '-m', "18000", '--apkfile', self.apkPath, '-d', self.udid])
+            ud = UIDump(['-p', self.pkgname, '-m', str(MONKEY_TIME), '--apkfile', self.apkPath, '-d', self.udid])
             ud.startUIDump()
         except Exception as e:
             self.logger.error("UIDump %s failed, reason : %s" % (self.pkgname, e))

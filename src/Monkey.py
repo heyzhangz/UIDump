@@ -60,7 +60,11 @@ class Monkey:
     def stopMonkey(self):
 
         cmd_pid = ["adb", "-s", self.udid, "shell", "ps", "|", "grep", "monkey"]
-        output = subprocess.check_output(cmd_pid).decode()
+        try:
+            output = subprocess.check_output(cmd_pid, timeout=5).decode()
+        except Exception as e:
+            self.logger.warning("err in find monkey process, maybe block in winserver! Reason: %s", e)
+            return False
 
         if output == '':
             self.logger.info("No monkey running")

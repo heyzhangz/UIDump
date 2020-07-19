@@ -7,11 +7,13 @@ RECORD_OUTPUT_PATH = os.path.join(BASE_PATH, "output", "record")
 LOG_OUTPUT_PATH = os.path.join(BASE_PATH, "output", "log")
 
 # 框架配置
-# TMP_APK_FILE_PATH = os.path.join(BASE_PATH, 'install_tmp.apk')
-
 DUMP_INTERVAL = 1
-MONKEY_TIME = 0
 UI_WATCHER_TIME_INTERVAL = 1
+MONKEY_TIME = 3600
+
+# 多任务模式配置
+DEVICE_LIST = []
+APP_LIST_PATH = os.path.join(BASE_PATH, "category_top_bak.json")
 
 # 信息收集模块配置
 SCREENSHOT_FILE_NAME = "screenshot.jpg"
