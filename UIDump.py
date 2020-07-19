@@ -188,8 +188,8 @@ class UIDump:
                 self.logger.info("app %s is not running " % self.pkgname)
                 # 清一下白名单APP，防止对后续dump造成影响
                 # device.stopApp()
-                if monkey is not None:
-                    monkey.stopMonkey()
+                if monkey is not None and monkey.stopMonkey():
+                    monkey = None
                 # 如果app异常退出，且计时未结束重启app
                 # getAppInstallStatus 避免当前app因为apk问题导致反复重启
                 if not self.timer.isFinish() and self.device.getAppInstallStatus() and errRestartCount < 3:
@@ -213,8 +213,8 @@ class UIDump:
             dumpcount += 1
             time.sleep(self.dumpInterval)
             if self.timer.isFinish():
-                if monkey is not None:
-                    monkey.stopMonkey()
+                if monkey is not None and monkey.stopMonkey():
+                    monkey = None
                 self.device.stopApp(self.pkgname)
                 self.device.pressHome()
 

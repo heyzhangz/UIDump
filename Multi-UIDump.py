@@ -4,11 +4,11 @@ import re
 import sys
 import time
 
-from GlobalConfig import LOG_OUTPUT_PATH
-from lib.Logger import initLogger
-
 rootdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(rootdir)
+
+from GlobalConfig import LOG_OUTPUT_PATH
+from lib.Logger import initLogger
 
 from src.Distribute import Dispatch, App
 

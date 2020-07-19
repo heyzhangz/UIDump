@@ -59,18 +59,16 @@ class Monkey:
 
     def stopMonkey(self):
 
-        for i in range(10):
-            cmd_pid = ["adb", "-s", self.udid, "shell", "ps", "|", "grep", "monkey"]
-            output = subprocess.check_output(cmd_pid).decode()
+        cmd_pid = ["adb", "-s", self.udid, "shell", "ps", "|", "grep", "monkey"]
+        output = subprocess.check_output(cmd_pid).decode()
 
-            if output == '':
-                self.logger.info("No monkey running")
-                break
-            else:
-                output = re.search('shell {5}[0-9]+', output).group()
-                pid = re.search('[0-9]+', output).group()
-                self.logger.info("kill the monkey process: %s" % pid)
-                subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
+        if output == '':
+            self.logger.info("No monkey running")
+        else:
+            output = re.search('shell {5}[0-9]+', output).group()
+            pid = re.search('[0-9]+', output).group()
+            self.logger.info("kill the monkey process: %s" % pid)
+            subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
+            return True
 
-        time.sleep(2)
-        pass
+        return False

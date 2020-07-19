@@ -24,8 +24,8 @@ class Dispatch(pykka.ThreadingActor):
 
         self.logger.info('Begin dispatch task')
         for udid in self.udids:
-            worker = Worker.start(name='worker-%s' % udid, udid=udid, logger=self.logger)
             if self.appQueue:
+                worker = Worker.start(name='worker-%s' % udid, udid=udid, logger=self.logger)
                 app = self.appQueue.pop()
                 self.logger.info('Dispatch worker-%s : %s' % (udid, app.pkgname))
                 worker.tell({'apkpath': app.apkpath, 'pkgname': app.pkgname, 'currentworker': self.actor_ref})
@@ -86,10 +86,10 @@ class Worker(pykka.ThreadingActor):
 
         try:
             # ud = UIDump(['-p', self.pkgname, '-m', "1800000", '--apkfile', self.apkPath])
-            ud = UIDump(['-p', self.pkgname, '-m', "36000", '--apkfile', self.apkPath, '-d', self.udid])
+            ud = UIDump(['-p', self.pkgname, '-m', "18000", '--apkfile', self.apkPath, '-d', self.udid])
             ud.startUIDump()
         except Exception as e:
-            self.logger.error("UIDump " + self.pkgname + " failed, reason : " + e)
+            self.logger.error("UIDump %s failed, reason : %s" % (self.pkgname, e))
             is_error = True
             time.sleep(120)
         else:
