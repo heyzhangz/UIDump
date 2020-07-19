@@ -9,7 +9,7 @@ sys.path.append(rootdir)
 
 from GlobalConfig import LOG_OUTPUT_PATH, DEVICE_LIST, APP_LIST_PATH
 from lib.Logger import initLogger
-from src.Distribute import Dispatch, App
+from src.Distribute import Dispatch
 
 
 def readAPPList(filepath):
@@ -35,7 +35,7 @@ class UIDumpTask:
             for apkpath in arr:
                 pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
                 newpath = 'http://10.141.209.136:8002/' + apkpath[6:]
-                self.apkList.append(App(pkgname=pkgname, apkpath=newpath))
+                self.apkList.append({"pkgname": pkgname, "apkpath": apkpath, "downloadpath": newpath})
 
         if udids is None or len(udids) == 0:
             self.udids = [line.split('\t')[0] for line in

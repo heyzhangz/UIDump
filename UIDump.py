@@ -130,7 +130,7 @@ class UIDump:
             self.device.uninstallApk(self.pkgname)
 
         timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
-        self.logger.info("log end at %s\r\n\r\n" % timestamp)
+        self.logger.info("log end at %s\r\n" % timestamp)
 
         pass
 

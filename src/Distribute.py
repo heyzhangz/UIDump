@@ -1,15 +1,13 @@
-import pykka
+
+import os
 import time
+from datetime import datetime
 
-from GlobalConfig import MONKEY_TIME
+import pykka
+
+from GlobalConfig import MONKEY_TIME, BASE_PATH
 from UIDump import UIDump
-
-
-class App:
-
-    def __init__(self, pkgname, apkpath):
-        self.pkgname = pkgname
-        self.apkpath = apkpath
+from lib.Common import saveJsonFile
 
 
 class Dispatch(pykka.ThreadingActor):
@@ -19,18 +17,22 @@ class Dispatch(pykka.ThreadingActor):
         super(Dispatch, self).__init__()
         self.appQueue = appQueue
         self.aliveWorkers = []
-        self.startTime = time.time()
+        self.startTime = datetime.now()
         self.udids = udidList
         self.logger = logger
+        self.errorAppList = {}
 
         self.logger.info('Begin dispatch task')
         for udid in self.udids:
             if self.appQueue:
                 worker = Worker.start(name='worker-%s' % udid, udid=udid, logger=self.logger)
                 app = self.appQueue.pop()
-                self.logger.info('Dispatch worker-%s : %s' % (udid, app.pkgname))
-                worker.tell({'apkpath': app.apkpath, 'pkgname': app.pkgname, 'currentworker': self.actor_ref})
+                self.logger.info('Dispatch worker-%s : %s' % (udid, app['pkgname']))
+                worker.tell({'downloadpath': app['downloadpath'],
+                             'pkgname': app['pkgname'],
+                             'currentworker': self.actor_ref})
                 self.aliveWorkers.append(worker)
+                self.errorAppList[udid] = []
             else:
                 self.logger.warning('Apps is less than workers')
                 break
@@ -46,7 +48,7 @@ class Dispatch(pykka.ThreadingActor):
         if errorFlag:
             self.logger.error('%s finish testing %s with error!' % (returnWorker.name, returnWorker.pkgname))
             # self.appQueue.append(return_worker.app)
-            # TODO record
+            self.errorAppList[returnWorker.udid].append([returnWorker.pkgname, returnWorker.apkPath])
         else:
             self.logger.info('%s finish testing %s!' % (returnWorker.name, returnWorker.pkgname))
 
@@ -58,16 +60,22 @@ class Dispatch(pykka.ThreadingActor):
         else:
             self.logger.info('app queue is empty. Stop %s' % returnWorker.name)
             returnWorker.actor_ref.stop()
-            self.aliveWorkers.remove(returnWorker)
+            self.aliveWorkers.remove(returnWorker.actor_ref)
             if len(self.aliveWorkers) == 0:
                 self.logger.info('No living worker, stop dispatcher!')
-                end_time = time.time()
-                total = end_time - self.startTime
-                hour = total / 3600
-                minute = (total % 3600) / 60
-                second = total % 60
-                self.logger.info('Consume time : ' + str(hour) + 'h' + str(minute) + 'm' + str(second) + 's')
+                endTime = datetime.now()
+                totalSeconds = (endTime - self.startTime).seconds
+                hour = totalSeconds // 3600
+                minute = (totalSeconds % 3600) // 60
+                second = totalSeconds % 60
+                self.logger.info('Consume time : %sh %sm %ss' % (str(hour), str(minute), str(second)))
                 self.stop()
+
+                timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
+                saveJsonFile(self.errorAppList, os.path.join(BASE_PATH, "err_app_list_%s.json" % timestamp))
+                saveJsonFile(self.appQueue, os.path.join(BASE_PATH, "remain_app_list_%s.json" % timestamp))
+
+        pass
 
 
 class Worker(pykka.ThreadingActor):
@@ -80,8 +88,10 @@ class Worker(pykka.ThreadingActor):
         self.pkgname = ''
         self.logger = logger
 
+        pass
+
     def on_receive(self, message: dict):
-        self.apkPath = message.get('apkpath')
+        self.apkPath = message.get('downloadpath')
         self.pkgname = message.get('pkgname')
         currentWork = message.get('currentworker')
 
@@ -96,3 +106,5 @@ class Worker(pykka.ThreadingActor):
             is_error = False
 
         currentWork.tell({'worker': self, 'iserror': is_error})
+
+        pass
