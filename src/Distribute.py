@@ -97,7 +97,7 @@ class Worker(pykka.ThreadingActor):
         currentWork = message.get('currentworker')
 
         try:
-            ud = UIDump(['-p', self.pkgname, '-m', str(MONKEY_TIME), '--apkfile', self.apkPath, '-d', self.udid])
+            ud = UIDump(['-p', self.pkgname, '-m', MONKEY_TIME, '--apkfile', self.apkPath, '-d', self.udid])
             isok = ud.startUIDump()
         except Exception as e:
             self.logger.error("UIDump %s failed, reason : %s" % (self.pkgname, e))
