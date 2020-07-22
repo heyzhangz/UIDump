@@ -155,6 +155,15 @@ class DeviceConnect:
             ).click()
             self.device.watcher.remove("GOOGLE_BIND_BUTTON")
             self.device.watcher.remove("GOOGLE_BIND_ICON")
+            self.device.watcher.remove("GOOGLE_BIND_TEXT")
+
+        def GoogleBindCallbackText():
+            self.device.xpath(
+                xpath="//android.widget.TextView[re:match(@text, '(?i)(sign|login|bind|continue).*google')]"
+            ).click()
+            self.device.watcher.remove("GOOGLE_BIND_BUTTON")
+            self.device.watcher.remove("GOOGLE_BIND_ICON")
+            self.device.watcher.remove("GOOGLE_BIND_TEXT")
 
         def GoogleBindCallbackIcon():
             self.device.xpath(
@@ -162,10 +171,15 @@ class DeviceConnect:
             ).click()
             self.device.watcher.remove("GOOGLE_BIND_BUTTON")
             self.device.watcher.remove("GOOGLE_BIND_ICON")
+            self.device.watcher.remove("GOOGLE_BIND_TEXT")
 
         self.device.watcher("GOOGLE_BIND_BUTTON").when(
             xpath="//android.widget.Button[re:match(@text, '(?i)(sign|login|bind|continue).*google')]"
         ).call(GoogleBindCallbackButton)
+
+        self.device.watcher("GOOGLE_BIND_TEXT").when(
+            xpath="//android.widget.TextView[re:match(@text, '(?i)(sign|login|bind|continue).*google')]"
+        ).call(GoogleBindCallbackText)
 
         self.device.watcher("GOOGLE_BIND_ICON").when(
             xpath="//android.widget.ImageView[re:match(@resource-id, '(?i)account.*google')]"
