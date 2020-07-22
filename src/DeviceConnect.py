@@ -196,6 +196,29 @@ class DeviceConnect:
                   "and re:match(@text, '(?i)unfortunately.*stopped.')]"
         ).call(StartFailCallback)
 
+        # 7.1.1程序崩溃弹窗
+        def StartFailCallback_7():
+            self.appInstallStatus = False
+            self.device.xpath(
+                "//android.widget.Button[re:match(@text, '(?i)Close.*app')]"
+            ).click()
+
+        self.device.watcher("START_FAIL_7").when(
+            xpath="//android.widget.TextView[@resource-id='android:id/alertTitle' "
+                  "and re:match(@text, '(?i).*keeps stopping')]"
+        ).call(StartFailCallback_7)
+
+        # 第一次会有重启选项
+        def StartFailCallbackFirsrt_7():
+            self.device.xpath(
+                "//android.widget.Button[re:match(@text, '(?i)Open app again')]"
+            ).click()
+
+        self.device.watcher("START_FAIL_First_7").when(
+            xpath="//android.widget.TextView[@resource-id='android:id/alertTitle' "
+                  "and re:match(@text, '(?i).*has stopped')]"
+        ).call(StartFailCallbackFirsrt_7)
+
         self.device.watcher.start(UI_WATCHER_TIME_INTERVAL)
         self.device.watcher.run()
 
