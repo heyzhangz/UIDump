@@ -34,7 +34,7 @@ class UIDumpTask:
         for _, arr in resjson.items():
             for apkpath in arr:
                 pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
-                newpath = 'http://10.141.209.136:8002/' + apkpath[6:]
+                newpath = 'http://10.141.209.139:8002/' + apkpath[6:]
                 self.apkList.append({"pkgname": pkgname, "apkpath": apkpath, "downloadpath": newpath})
 
         if udids is None or len(udids) == 0:

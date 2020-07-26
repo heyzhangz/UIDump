@@ -47,16 +47,14 @@ class Dispatch(pykka.ThreadingActor):
         runStatus = message.get('runStatus')
         if not isSuccess(runStatus):
             self.logger.error('%s finish testing %s with error!' % (returnWorker.name, returnWorker.pkgname))
-
+            if returnWorker.pkgname not in self.errorAppList:
+                self.errorAppList[returnWorker.pkgname] = {'lastErrStatus': runStatus.name, 'restartCount': 0}
+            
             # 需要重新安装的APP
             if isNeedContinue(runStatus) or isNeedRestart(runStatus):
-                if returnWorker.pkgname in self.errorAppList:
-                    if self.errorAppList[returnWorker.pkgname]['restartCount'] < 3:
+                if self.errorAppList[returnWorker.pkgname]['restartCount'] < 3:
                         self.errorAppList[returnWorker.pkgname]['restartCount'] += 1
                         self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
-                else:
-                    self.errorAppList[returnWorker.pkgname] = {'lastErrStatus': runStatus, 'restartCount': 1}
-                    self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
 
         else:
             self.logger.info('%s finish testing %s!' % (returnWorker.name, returnWorker.pkgname))

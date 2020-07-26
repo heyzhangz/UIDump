@@ -63,7 +63,7 @@ class DeviceConnect:
             return RunStatus.UI2_ERROR
 
         time.sleep(1)
-        pass
+        return RunStatus.SUCCESS
 
     def stopApp(self, pkgname=""):
 

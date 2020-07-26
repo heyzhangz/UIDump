@@ -51,7 +51,7 @@ class Monkey:
                 monkeycmd += '-p ' + self.packagename + ' '
             monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
                          '--pct-syskeys 0 --pct-rotation 0 --pct-appswitch 5 --pkg-whitelist-file %s ' \
-                         '--throttle %s -v -v -v %s >> %s &' \
+                         '--throttle %s -v %s >> %s &' \
                          % ('/data/local/tmp/' + MONKEY_WHITE_LIST_NAME, self.timeInterval, 400000000,
                             os.path.join(self.logdir, MONKEY_LOG_NAME))
 

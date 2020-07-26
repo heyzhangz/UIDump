@@ -12,9 +12,14 @@ DUMP_INTERVAL = 1  # dump时间间隔
 UI_WATCHER_TIME_INTERVAL = 1  # UI watcher 监控分析间隔
 
 # 多任务模式配置
-MONKEY_TIME = 3600  # monkey运行时间，毫秒（该参数只影响多任务模式）
-DEVICE_LIST = []  # 可选设备列表，[]或None表示使用全部在线设备
-APP_LIST_PATH = os.path.join(BASE_PATH, "category_top.json")  # app list 文件路径（TODO 注意Multi-UIDump.py文件读取格式可能也要改）
+MONKEY_TIME = 72000  # monkey运行时间，毫秒（该参数只影响多任务模式）
+DEVICE_LIST = [
+    'emulator-5554',
+    'emulator-5556',
+    'emulator-5558',
+    'emulator-5560'
+]  # 可选设备列表，[]或None表示使用全部在线设备
+APP_LIST_PATH = os.path.join(BASE_PATH, "category_top_bak.json")  # app list 文件路径（TODO 注意Multi-UIDump.py文件读取格式可能也要改）
 
 # 信息收集模块配置
 SCREENSHOT_FILE_NAME = "screenshot.jpg"

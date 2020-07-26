@@ -3,6 +3,9 @@ import os
 import sys
 import time
 
+rootdir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(rootdir)
+
 from GlobalConfig import DUMP_INTERVAL, MONKEY_TIME, RECORD_OUTPUT_PATH, MONKEY_TIME_INTERVAL, LOG_OUTPUT_PATH
 from lib.Logger import initLogger
 from lib.RunStatus import RunStatus, isSuccess
@@ -71,10 +74,6 @@ class UIDump:
         self.logger = initLogger(loggerName="UIDump_%s" % self.pkgname,
                                  outputPath=os.path.join(LOG_OUTPUT_PATH, "UIDump_%s.log" % self.pkgname))
 
-        # Monkey模式 设置计时器
-        if self.monkeyMode:
-            self.timer = Timer(logger=self.logger, duration=self.monkeyTime)
-
         # 未指定设备取第一个
         if self.udid == "":
             self.logger.info("no specified device!")
@@ -84,18 +83,22 @@ class UIDump:
             if self.udid == "":
                 self.logger.error("no available devices!")
                 sys.exit(1)
-
+        
         # 初始化 uiautomator
         try:
             self.device = DeviceConnect(self.logger, self.udid)
         except Exception as e:
             self.runStatus = RunStatus.UI2_INIT_ERR
             return
-
+        
+        # Monkey模式 设置计时器
+        if self.monkeyMode:
+            self.timer = Timer(logger=self.logger, duration=self.monkeyTime, device=self.device)
+        
         # APK_FILE不为空，表示需要从指定路径安装app
         if self.apkFilePath is not "":
             self.runStatus = self.device.installApk(self.pkgname, self.apkFilePath)
-
+        
         pass
 
     def __printUseMethod(self):
@@ -113,6 +116,7 @@ class UIDump:
     def startUIDump(self):
 
         if not isSuccess(self.runStatus):
+            self.device.uninstallApk(self.pkgname)
             return self.runStatus
 
         self.logger.info("start record mode, the package is %s and dump interval is %d"
