@@ -2,12 +2,10 @@ import getopt
 import os
 import sys
 import time
-import traceback
 
 from GlobalConfig import DUMP_INTERVAL, MONKEY_TIME, RECORD_OUTPUT_PATH, MONKEY_TIME_INTERVAL, LOG_OUTPUT_PATH
-from OneForAllHook.hook_start import CallerHook
-from lib.Common import deleteFile
 from lib.Logger import initLogger
+from lib.RunStatus import RunStatus, isSuccess
 from src.DeviceConnect import DeviceConnect
 from src.Monkey import Monkey
 from src.Timer import Timer
@@ -27,6 +25,7 @@ class UIDump:
         self.device = None
         self.timer = None
         self.logger = None
+        self.runStatus = RunStatus.SUCCESS
 
         self.__getConfig(argv)
 
@@ -63,7 +62,7 @@ class UIDump:
                 self.__printUseMethod()
                 sys.exit(1)
 
-        if self.pkgname == "":
+        if self.pkgname == "" or self.pkgname is None:
             print("package name is necessary")
             self.__printUseMethod()
             sys.exit(1)
@@ -72,35 +71,30 @@ class UIDump:
         self.logger = initLogger(loggerName="UIDump_%s" % self.pkgname,
                                  outputPath=os.path.join(LOG_OUTPUT_PATH, "UIDump_%s.log" % self.pkgname))
 
-        # 设置计时器
+        # Monkey模式 设置计时器
         if self.monkeyMode:
             self.timer = Timer(logger=self.logger, duration=self.monkeyTime)
 
+        # 未指定设备取第一个
         if self.udid == "":
+            self.logger.info("no specified device!")
             self.udid = [line.split('\t')[0] for line in
                          os.popen("adb devices", 'r', 1).read().split('\n') if
                          len(line) != 0 and line.find('\tdevice') != -1][0]
             if self.udid == "":
-                self.logger.error("no available devices")
+                self.logger.error("no available devices!")
                 sys.exit(1)
 
-        self.device = DeviceConnect(self.logger, self.udid)
+        # 初始化 uiautomator
+        try:
+            self.device = DeviceConnect(self.logger, self.udid)
+        except Exception as e:
+            self.runStatus = RunStatus.UI2_INIT_ERR
+            return
 
         # APK_FILE不为空，表示需要从指定路径安装app
         if self.apkFilePath is not "":
-            try:
-                self.device.installApk(self.pkgname, self.apkFilePath)
-            except Exception as e:
-                self.logger.warning("err in install app %s from %s, Exception: %s", (self.pkgname, self.apkFilePath, e))
-                traceback.print_exc()
-                delFilePath = 'tmp_%s.apk' % self.pkgname
-                try:
-                    self.logger.info("delete file %s" % delFilePath)
-                    deleteFile(delFilePath)
-                except Exception as ee:
-                    self.logger.warning("delete %s failed! %s" % (delFilePath, ee))
-                    traceback.print_exc()
-                return
+            self.runStatus = self.device.installApk(self.pkgname, self.apkFilePath)
 
         pass
 
@@ -118,17 +112,20 @@ class UIDump:
 
     def startUIDump(self):
 
+        if not isSuccess(self.runStatus):
+            return self.runStatus
+
         self.logger.info("start record mode, the package is %s and dump interval is %d"
                          % (self.pkgname, self.dumpInterval))
 
         timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
         self.logger.info("log start at %s" % timestamp)
 
-        ret = True
         try:
-            ret = self.startRecord(timestamp)
+            self.runStatus = self.startRecord(timestamp)
         except Exception as e:
-            self.logger.error("err in dump %s, Reason: %s" % (self.pkgname, e))
+            self.logger.error("unknown err in dump %s, Reason: %s" % (self.pkgname, e))
+            self.runStatus = RunStatus.ERROR
 
         if self.apkFilePath is not "":
             self.device.uninstallApk(self.pkgname)
@@ -136,17 +133,17 @@ class UIDump:
         timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
         self.logger.info("log end at %s\r\n" % timestamp)
 
-        return ret
+        return self.runStatus
 
     def startRecord(self, timestamp):
 
         if self.pkgname == "":
             self.logger.error("no input package name")
-            return
+            return RunStatus.ERROR
 
         if self.pkgname not in self.device.getInstalledApps():
             self.logger.error("%s is not installed" % self.pkgname)
-            return
+            return RunStatus.APK_INSTALL_ERR
 
         outputpath = os.path.join(self.recordOutPath, self.pkgname + "_" + timestamp)
 
@@ -155,8 +152,12 @@ class UIDump:
 
         # 初始化frida
         # ch = CallerHook(self.pkgname, outputpath)
+
         # 设置回调事件
-        self.device.startWatchers()
+        try:
+            self.device.startWatchers()
+        except Exception:
+            return RunStatus.UI2_WATCHER_ERR
 
         if self.timer is None:
             # 没设置Timer, 人工跑APP还是用home键退出脚本
@@ -169,8 +170,11 @@ class UIDump:
         dumpcount = 1
         time.sleep(1)
 
-        # 目前先利用frida孵化进程 有bug，用Monkey起
-        self.device.startApp(self.pkgname)
+        # 目前利用frida孵化进程有bug，用Monkey起
+        self.runStatus = self.device.startApp(self.pkgname)
+        if not isSuccess(self.runStatus):
+            return self.runStatus
+
         # ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
         time.sleep(5)  # 有时候app界面还没加载出来，等5s
 
@@ -179,7 +183,9 @@ class UIDump:
         if self.monkeyMode and self.device.getAppInstallStatus():
             monkey = Monkey(logger=self.logger, udid=self.udid, pkgname=self.pkgname,
                             timeInterval=MONKEY_TIME_INTERVAL, outdir=outputpath)
-            monkey.startMonkey()
+            self.runStatus = monkey.startMonkey()
+        if not isSuccess(self.runStatus):
+            return self.runStatus
 
         # 启动计时器
         self.timer.start()
@@ -189,8 +195,6 @@ class UIDump:
         while True:
             if not self.device.isAppRun(self.pkgname):
                 self.logger.info("app %s is not running " % self.pkgname)
-                # 清一下白名单APP，防止对后续dump造成影响
-                # device.stopApp()
                 if monkey is not None and monkey.stopMonkey():
                     monkey = None
                 # 如果app异常退出，且计时未结束重启app
@@ -199,13 +203,25 @@ class UIDump:
                     errRestartCount += 1
                     self.logger.warning("Abnormal termination in app running, restart, count = %d" % errRestartCount)
                     self.device.closeWatchers()
-                    self.device.startWatchers()
-                    self.device.startApp(self.pkgname)
+
+                    try:
+                        self.device.startWatchers()
+                    except Exception:
+                        self.runStatus = RunStatus.UI2_WATCHER_ERR
+                        break
+
+                    self.runStatus = self.device.startApp(self.pkgname)
+                    if not isSuccess(self.runStatus):
+                        break
+
                     # ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
                     time.sleep(5)
                     monkey = Monkey(logger=self.logger, udid=self.udid, pkgname=self.pkgname,
                                     timeInterval=MONKEY_TIME_INTERVAL, outdir=outputpath)
-                    monkey.startMonkey()
+                    self.runStatus = monkey.startMonkey()
+                    if not isSuccess(self.runStatus):
+                        break
+
                     continue
 
                 self.device.stopApp(self.pkgname)
@@ -213,6 +229,7 @@ class UIDump:
                 # ch.stop_hook()
                 self.device.pressHome()
                 break
+
             self.logger.info("dump %s UI" % str(dumpcount))
             self.device.dumpUI(outputpath, dumpcount)
             dumpcount += 1
@@ -230,16 +247,21 @@ class UIDump:
             import shutil
             shutil.rmtree(outputpath)
             self.logger.warning("err in apk, pass the case")
-            return False
+            return RunStatus.APK_INSTALL_ERR
         elif errRestartCount >= 3:
             import shutil
             shutil.rmtree(outputpath)
             self.logger.warning("app restart more than 3 times, pass the case")
-            return False
+            return RunStatus.APK_INSTALL_ERR
+        elif not isSuccess(self.runStatus):
+            import shutil
+            shutil.rmtree(outputpath)
+            self.logger.error("err in restart record")
+            return self.runStatus
         else:
             self.logger.info("the output saved in " + outputpath)
 
-        return True
+        return self.runStatus.SUCCESS
 
 
 if __name__ == "__main__":

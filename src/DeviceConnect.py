@@ -8,6 +8,7 @@ import uiautomator2
 
 from GlobalConfig import SCREENSHOT_FILE_NAME, LAYOUT_FILE_NAME, UI_WATCHER_TIME_INTERVAL
 from lib.Common import deleteFile
+from lib.RunStatus import RunStatus
 
 
 class DeviceConnect:
@@ -54,8 +55,12 @@ class DeviceConnect:
 
     def startApp(self, pkgname=""):
 
-        self.logger.info("start app: " + pkgname)
-        self.device.app_start(pkgname, use_monkey=True)
+        try:
+            self.logger.info("start app: " + pkgname)
+            self.device.app_start(pkgname, use_monkey=True)
+        except Exception as e:
+            self.logger.error("uiautomator2 start app err, Reason: %s" % e)
+            return RunStatus.UI2_ERROR
 
         time.sleep(1)
         pass
@@ -95,21 +100,34 @@ class DeviceConnect:
 
         self.logger.info("start install " + pkgname)
         if remoteApkPath == "":
-            raise Exception("apkpath is null!")
+            return RunStatus.FILE_NOT_FIND
 
         if remoteApkPath.startswith("http"):
             self.logger.info('download apk from %s' % remoteApkPath)
-            urllib.request.urlretrieve(remoteApkPath, 'tmp_%s.apk' % pkgname)
+            try:
+                urllib.request.urlretrieve(remoteApkPath, 'tmp_%s.apk' % pkgname)
+            except Exception as e:
+                self.logger.error("download %s from %s failed!" % (pkgname, remoteApkPath))
+                return RunStatus.DOWNLOAD_ERR
             remoteApkPath = 'tmp_%s.apk' % pkgname
 
-        output = subprocess.check_output('adb -s %s install -r %s' % (self.udid, remoteApkPath), shell=True).decode()
+        try:
+            output = subprocess.check_output('adb -s %s install -r %s' % (self.udid, remoteApkPath),
+                                             shell=True).decode()
+        except subprocess.CalledProcessError:
+            self.logger.error("app install failed!")
+            return RunStatus.APK_INSTALL_ERR
+        except Exception:
+            self.logger.error("app install cmd exec failed!")
+            return RunStatus.CMD_EXEC_ERR
 
         time.sleep(1)
         if pkgname not in self.getInstalledApps():
-            raise Exception("app install failed! reason: %s" % output)
+            self.logger.error("app install failed! reason: %s" % output)
+            return RunStatus.APK_INSTALL_ERR
 
         self.logger.info("app: %s installed successfully." % pkgname)
-        pass
+        return RunStatus.SUCCESS
 
     def uninstallApk(self, pkgname):
 
@@ -126,7 +144,6 @@ class DeviceConnect:
             deleteFile(delFilePath)
         except Exception as ee:
             self.logger.warning("delete %s failed! %s" % (delFilePath, ee))
-            traceback.print_exc()
         pass
 
     def getAppInstallStatus(self):

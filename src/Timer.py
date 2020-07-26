@@ -31,7 +31,7 @@ class Timer:
         else:
             nowtime = time.time() * 1000
             if nowtime - self.startTime >= self.duration:
-                self.logger.info("the timer is end")
+                self.logger.info("%s record time is end" % self.device.udid)
                 return True
 
         return False

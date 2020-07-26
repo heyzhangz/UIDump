@@ -3,6 +3,7 @@ import re
 import subprocess
 
 from GlobalConfig import MONKEY_WHITE_LIST_PATH, MONKEY_LOG_NAME, MONKEY_TIME_INTERVAL, MONKEY_WHITE_LIST_NAME
+from lib.RunStatus import RunStatus
 
 
 class Monkey:
@@ -44,17 +45,22 @@ class Monkey:
 
     def startMonkey(self):
 
-        monkeycmd = 'adb -s %s shell monkey ' % self.udid
-        if self.packagename is not "":
-            monkeycmd += '-p ' + self.packagename + ' '
-        monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
-                     '--pct-syskeys 0 --pct-rotation 0 --pkg-whitelist-file %s ' \
-                     '--throttle %s -v -v -v %s >> %s &' \
-                     % ('/data/local/tmp/' + MONKEY_WHITE_LIST_NAME, self.timeInterval, 400000000,
-                        os.path.join(self.logdir, MONKEY_LOG_NAME))
+        try:
+            monkeycmd = 'adb -s %s shell monkey ' % self.udid
+            if self.packagename is not "":
+                monkeycmd += '-p ' + self.packagename + ' '
+            monkeycmd += '--ignore-timeouts --ignore-crashes --kill-process-after-error ' \
+                         '--pct-syskeys 0 --pct-rotation 0 --pct-appswitch 5 --pkg-whitelist-file %s ' \
+                         '--throttle %s -v -v -v %s >> %s &' \
+                         % ('/data/local/tmp/' + MONKEY_WHITE_LIST_NAME, self.timeInterval, 400000000,
+                            os.path.join(self.logdir, MONKEY_LOG_NAME))
 
-        subprocess.Popen(monkeycmd, shell=True)
-        pass
+            subprocess.Popen(monkeycmd, shell=True)
+        except Exception as e:
+            self.logger.error("monkey start error!")
+            return RunStatus.MONKEY_ERR
+
+        return RunStatus.SUCCESS
 
     def stopMonkey(self):
 

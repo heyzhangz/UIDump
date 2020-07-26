@@ -8,6 +8,7 @@ import pykka
 from GlobalConfig import MONKEY_TIME, BASE_PATH
 from UIDump import UIDump
 from lib.Common import saveJsonFile
+from lib.RunStatus import RunStatus, isSuccess, isNeedContinue, isNeedRestart
 
 
 class Dispatch(pykka.ThreadingActor):
@@ -17,7 +18,7 @@ class Dispatch(pykka.ThreadingActor):
         super(Dispatch, self).__init__()
         self.appQueue = appQueue
         self.aliveWorkers = []
-        self.startTime = datetime.now()
+        self.startTime = time.time()
         self.udids = udidList
         self.logger = logger
         self.errorAppList = {}
@@ -32,7 +33,6 @@ class Dispatch(pykka.ThreadingActor):
                              'pkgname': app['pkgname'],
                              'currentworker': self.actor_ref})
                 self.aliveWorkers.append(worker)
-                self.errorAppList[udid] = []
             else:
                 self.logger.warning('Apps is less than workers')
                 break
@@ -44,13 +44,24 @@ class Dispatch(pykka.ThreadingActor):
     def on_receive(self, message: dict):
 
         returnWorker = message.get('worker')
-        ret = message.get('isok')
-        if not ret:
+        runStatus = message.get('runStatus')
+        if not isSuccess(runStatus):
             self.logger.error('%s finish testing %s with error!' % (returnWorker.name, returnWorker.pkgname))
-            # self.appQueue.append(return_worker.app)
-            self.errorAppList[returnWorker.udid].append([returnWorker.pkgname, returnWorker.apkPath])
+
+            # 需要重新安装的APP
+            if isNeedContinue(runStatus) or isNeedRestart(runStatus):
+                if returnWorker.pkgname in self.errorAppList:
+                    if self.errorAppList[returnWorker.pkgname]['restartCount'] < 3:
+                        self.errorAppList[returnWorker.pkgname]['restartCount'] += 1
+                        self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
+                else:
+                    self.errorAppList[returnWorker.pkgname] = {'lastErrStatus': runStatus, 'restartCount': 1}
+                    self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
+
         else:
             self.logger.info('%s finish testing %s!' % (returnWorker.name, returnWorker.pkgname))
+            if returnWorker.pkgname in self.errorAppList:
+                del(self.errorAppList[returnWorker.pkgname])
 
         if self.appQueue:
             app = self.appQueue.pop()
@@ -64,8 +75,8 @@ class Dispatch(pykka.ThreadingActor):
             self.aliveWorkers.remove(returnWorker.actor_ref)
             if len(self.aliveWorkers) == 0:
                 self.logger.info('No living worker, stop dispatcher!')
-                endTime = datetime.now()
-                totalSeconds = (endTime - self.startTime).seconds
+                endTime = time.time()
+                totalSeconds = (endTime - self.startTime)
                 hour = totalSeconds // 3600
                 minute = (totalSeconds % 3600) // 60
                 second = totalSeconds % 60
@@ -74,7 +85,6 @@ class Dispatch(pykka.ThreadingActor):
 
                 timestamp = time.strftime('%Y%m%d%H%M', time.localtime())
                 saveJsonFile(self.errorAppList, os.path.join(BASE_PATH, "err_app_list_%s.json" % timestamp))
-                saveJsonFile(self.appQueue, os.path.join(BASE_PATH, "remain_app_list_%s.json" % timestamp))
 
         pass
 
@@ -88,6 +98,7 @@ class Worker(pykka.ThreadingActor):
         self.apkPath = ''
         self.pkgname = ''
         self.logger = logger
+        self.failcount = 0
 
         pass
 
@@ -98,12 +109,24 @@ class Worker(pykka.ThreadingActor):
 
         try:
             ud = UIDump(['-p', self.pkgname, '-m', MONKEY_TIME, '--apkfile', self.apkPath, '-d', self.udid])
-            isok = ud.startUIDump()
+            runStatus = ud.startUIDump()
         except Exception as e:
             self.logger.error("UIDump %s failed, reason : %s" % (self.pkgname, e))
-            isok = False
+            runStatus = RunStatus.ERROR
             time.sleep(120)
 
-        currentWork.tell({'worker': self, 'isok': isok})
+        if isSuccess(runStatus) and self.failcount > 0:
+            self.failcount -= 1
+
+        if isNeedRestart(runStatus):
+            self.failcount += 1
+
+        if self.failcount >= 3:
+            self.failcount = 0
+            # 失败超过3次 重启avd
+            os.system('adb -s %s reboot' % self.udid)
+            time.sleep(120)
+
+        currentWork.tell({'worker': self, 'runStatus': runStatus})
 
         pass
