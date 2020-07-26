@@ -12,7 +12,7 @@ DUMP_INTERVAL = 1  # dump时间间隔
 UI_WATCHER_TIME_INTERVAL = 1  # UI watcher 监控分析间隔
 
 # 多任务模式配置
-MONKEY_TIME = 72000  # monkey运行时间，毫秒（该参数只影响多任务模式）
+MONKEY_TIME = 36000  # monkey运行时间，毫秒（该参数只影响多任务模式）
 DEVICE_LIST = [
     'emulator-5554',
     'emulator-5556',

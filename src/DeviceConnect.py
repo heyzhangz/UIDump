@@ -274,3 +274,18 @@ class DeviceConnect:
             return True
 
         return False
+        
+    def saveLog(self, outputDir, startTime):
+
+        startTime = time.strftime('%m-%d %H:%M:%S.000', time.localtime(int(startTime) - 5))
+
+        logCmd = ['adb', '-s', self.udid, 'logcat', '-t', startTime, '|',
+                  'grep', 'CODE-BEHAVIOR', '>', os.path.join(outputDir, "apiSeq.txt")]
+        try:
+            subprocess.check_output(logCmd, shell=True)
+        except Exception as e:
+            self.logger.warning("the api sequence save failed, reason: %s" % e)
+
+        time.sleep(2)
+
+        pass

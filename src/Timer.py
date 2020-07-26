@@ -7,7 +7,7 @@ class Timer:
 
         self.logger = logger
         self.duration = duration
-        self.startTime = time.time() * 1000
+        self.startTime = time.time()
         self.stopCondition = stopcondition
         self.device = device
 
@@ -15,8 +15,8 @@ class Timer:
 
     def start(self):
 
-        self.startTime = time.time() * 1000
-        pass
+        self.startTime = time.time()
+        return self.startTime
 
     def isFinish(self):
 
@@ -29,8 +29,9 @@ class Timer:
                 self.logger.info("the record is end by manual")
                 return True
         else:
-            nowtime = time.time() * 1000
-            if nowtime - self.startTime >= self.duration:
+            nowtime = time.time()
+            startTime = self.startTime
+            if (nowtime - startTime) * 1000 >= self.duration:
                 self.logger.info("%s record time is end" % self.device.udid)
                 return True
 

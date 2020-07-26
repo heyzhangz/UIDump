@@ -192,7 +192,7 @@ class UIDump:
             return self.runStatus
 
         # 启动计时器
-        self.timer.start()
+        starttime = self.timer.start()
         # 异常重启次数，有些app确实起不起来，最多重启3次
         errRestartCount = 0
         # 等待启动之后再轮询判断是否已经退出
@@ -263,6 +263,7 @@ class UIDump:
             self.logger.error("err in restart record")
             return self.runStatus
         else:
+            self.device.saveLog(outputpath, starttime)
             self.logger.info("the output saved in " + outputpath)
 
         return self.runStatus.SUCCESS

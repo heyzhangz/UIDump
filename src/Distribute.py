@@ -74,7 +74,7 @@ class Dispatch(pykka.ThreadingActor):
             if len(self.aliveWorkers) == 0:
                 self.logger.info('No living worker, stop dispatcher!')
                 endTime = time.time()
-                totalSeconds = (endTime - self.startTime)
+                totalSeconds = int(endTime - self.startTime)
                 hour = totalSeconds // 3600
                 minute = (totalSeconds % 3600) // 60
                 second = totalSeconds % 60
