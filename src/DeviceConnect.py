@@ -49,9 +49,19 @@ class DeviceConnect:
         screenshotpath = os.path.join(dirpath, SCREENSHOT_FILE_NAME)
         layoutxmlpath = os.path.join(dirpath, LAYOUT_FILE_NAME)
 
-        self.__saveScreenshot(screenshotpath)
-        self.__saveLayoutXML(layoutxmlpath)
-        pass
+        try:
+            self.__saveScreenshot(screenshotpath)
+        except Exception as e:
+            self.logger.error("err in save screenshot, Reason:%s" % e)
+            return RunStatus.UI2_ERROR
+
+        try:
+            self.__saveLayoutXML(layoutxmlpath)
+        except Exception as e:
+            self.logger.error("err in save layout, Reason:%s" % e)
+            return RunStatus.UI2_ERROR
+
+        return RunStatus.SUCCESS
 
     def startApp(self, pkgname=""):
 

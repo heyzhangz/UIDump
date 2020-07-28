@@ -235,7 +235,9 @@ class UIDump:
                 break
 
             self.logger.info("dump %s UI" % str(dumpcount))
-            self.device.dumpUI(outputpath, dumpcount)
+            self.runStatus = self.device.dumpUI(outputpath, dumpcount)
+            if not isSuccess(self.runStatus):
+                break
             dumpcount += 1
             time.sleep(self.dumpInterval)
             if self.timer.isFinish():

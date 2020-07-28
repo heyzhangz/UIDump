@@ -1,4 +1,3 @@
-
 import os
 import time
 from datetime import datetime
@@ -49,17 +48,17 @@ class Dispatch(pykka.ThreadingActor):
             self.logger.error('%s finish testing %s with error!' % (returnWorker.name, returnWorker.pkgname))
             if returnWorker.pkgname not in self.errorAppList:
                 self.errorAppList[returnWorker.pkgname] = {'lastErrStatus': runStatus.name, 'restartCount': 0}
-            
+
             # 需要重新安装的APP
             if isNeedContinue(runStatus) or isNeedRestart(runStatus):
                 if self.errorAppList[returnWorker.pkgname]['restartCount'] < 3:
-                        self.errorAppList[returnWorker.pkgname]['restartCount'] += 1
-                        self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
+                    self.errorAppList[returnWorker.pkgname]['restartCount'] += 1
+                    self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
 
         else:
             self.logger.info('%s finish testing %s!' % (returnWorker.name, returnWorker.pkgname))
             if returnWorker.pkgname in self.errorAppList:
-                del(self.errorAppList[returnWorker.pkgname])
+                del (self.errorAppList[returnWorker.pkgname])
 
         if self.appQueue:
             app = self.appQueue.pop()
@@ -109,7 +108,7 @@ class Worker(pykka.ThreadingActor):
             ud = UIDump(['-p', self.pkgname, '-m', MONKEY_TIME, '--apkfile', self.apkPath, '-d', self.udid])
             runStatus = ud.startUIDump()
         except Exception as e:
-            self.logger.error("UIDump %s failed, reason : %s" % (self.pkgname, e))
+            self.logger.error("special UIDump %s failed, reason : %s" % (self.pkgname, e))
             runStatus = RunStatus.ERROR
             time.sleep(120)
 
@@ -122,8 +121,9 @@ class Worker(pykka.ThreadingActor):
         if self.failcount >= 3:
             self.failcount = 0
             # 失败超过3次 重启avd
+            self.logger.warning("woker-%s fail count more than three, restart" % self.udid)
             os.system('adb -s %s reboot' % self.udid)
-            time.sleep(120)
+            time.sleep(300)
 
         currentWork.tell({'worker': self, 'runStatus': runStatus})
 

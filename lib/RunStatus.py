@@ -5,8 +5,6 @@ from enum import Enum, unique
 class RunStatus(Enum):
     SUCCESS = 0
 
-    ERROR = 999  # 其它异常
-
     # > 0 表示需要跳过的case
     # APP安装异常
     FILE_NOT_FIND = 1  # apk文件路径不存在
@@ -24,6 +22,8 @@ class RunStatus(Enum):
 
     # monkey 异常
     MONKEY_ERR = -21
+
+    ERROR = 999  # 其它异常
 
     pass
 
