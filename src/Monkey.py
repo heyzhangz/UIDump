@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import time
 
 from GlobalConfig import MONKEY_WHITE_LIST_PATH, MONKEY_LOG_NAME, MONKEY_TIME_INTERVAL, MONKEY_WHITE_LIST_NAME
 from lib.RunStatus import RunStatus
@@ -78,6 +79,8 @@ class Monkey:
             pid = re.search('\\S+ +([0-9]+)', output).group(1)
             self.logger.info("kill the monkey process: %s" % pid)
             subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
+            time.sleep(2)
+            
             return True
-
+        
         return False

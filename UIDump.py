@@ -2,6 +2,7 @@ import getopt
 import os
 import sys
 import time
+import traceback
 
 rootdir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(rootdir)
@@ -129,6 +130,7 @@ class UIDump:
         try:
             self.runStatus = self.startRecord(timestamp)
         except Exception as e:
+            traceback.print_exc()
             self.logger.error("unknown err in dump %s, Reason: %s" % (self.pkgname, e))
             self.runStatus = RunStatus.ERROR
 
@@ -249,7 +251,10 @@ class UIDump:
 
         self.device.closeWatchers()
         time.sleep(5)
-
+        
+        if monkey is not None:
+            monkey.stopMonkey()
+        
         if not self.device.getAppInstallStatus():
             import shutil
             shutil.rmtree(outputpath)
@@ -268,7 +273,7 @@ class UIDump:
         else:
             self.device.saveLog(outputpath, starttime)
             self.logger.info("the output saved in " + outputpath)
-
+        
         return self.runStatus.SUCCESS
 
 
