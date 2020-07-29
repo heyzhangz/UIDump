@@ -124,8 +124,9 @@ class Worker(pykka.ThreadingActor):
             self.failcount = 0
             # 失败超过3次 重启avd
             self.logger.warning("woker-%s fail count more than three, restart" % self.udid)
+            time.sleep(30)
             os.system('adb -s %s reboot' % self.udid)
-            time.sleep(300)
+            time.sleep(120)
 
         currentWork.tell({'worker': self, 'runStatus': runStatus})
 
