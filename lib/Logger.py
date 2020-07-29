@@ -4,13 +4,18 @@ import os
 from GlobalConfig import LOG_LEVEL
 
 
-def initLogger(loggerName=None, outputPath=None):
+def initLogger(loggerName=None, outputPath=None, udid=None):
     logger = logging.getLogger(loggerName) if loggerName else logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
     logLevel = LOG_LEVEL
-    formatter = logging.Formatter(fmt='(%(asctime)s)-[%(levelname)s] - %(filename)s[l:%(lineno)d] : %(message)s',
-                                  datefmt='%Y%m%d:%H%M%S')
+    if udid:
+        formatter = logging.Formatter(fmt='(%(asctime)s)-[%(levelname)s] %(filename)s[l:%(lineno)d]'
+                                          ': <%(udid)s> %(message)s',
+                                      datefmt='%m/%d %H:%M:%S')
+    else:
+        formatter = logging.Formatter(fmt='(%(asctime)s)-[%(levelname)s] %(filename)s[l:%(lineno)d]: %(message)s',
+                                      datefmt='%m/%d %H:%M:%S')
 
     printHandler = logging.StreamHandler()
     printHandler.setFormatter(formatter)
@@ -26,4 +31,4 @@ def initLogger(loggerName=None, outputPath=None):
         fileHandler.setLevel(logLevel)
         logger.addHandler(fileHandler)
 
-    return logger
+    return logging.LoggerAdapter(logger, extra={'udid': udid})

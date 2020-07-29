@@ -1,7 +1,6 @@
 import os
 import subprocess
 import time
-import traceback
 import urllib.request
 
 import uiautomator2
@@ -25,6 +24,7 @@ class DeviceConnect:
             self.device = uiautomator2.connect()
 
         self.appInstallStatus = True  # app安装状态
+        self.dumpErrCount = 0
 
         pass
 
@@ -53,13 +53,17 @@ class DeviceConnect:
             self.__saveScreenshot(screenshotpath)
         except Exception as e:
             self.logger.error("err in save screenshot, Reason:%s" % e)
-            return RunStatus.UI2_ERROR
+            self.dumpErrCount += 1
+            if self.dumpErrCount >= 3:
+                return RunStatus.UI2_ERROR
 
         try:
             self.__saveLayoutXML(layoutxmlpath)
         except Exception as e:
             self.logger.error("err in save layout, Reason:%s" % e)
-            return RunStatus.UI2_ERROR
+            self.dumpErrCount += 1
+            if self.dumpErrCount >= 3:
+                return RunStatus.UI2_ERROR
 
         return RunStatus.SUCCESS
 

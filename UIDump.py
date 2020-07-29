@@ -70,35 +70,36 @@ class UIDump:
             self.__printUseMethod()
             sys.exit(1)
 
-        # 初始化Logger
-        self.logger = initLogger(loggerName="UIDump_%s" % self.pkgname,
-                                 outputPath=os.path.join(LOG_OUTPUT_PATH, "UIDump_%s.log" % self.pkgname))
-
         # 未指定设备取第一个
         if self.udid == "":
-            self.logger.info("no specified device!")
+            print("no specified device!")
             self.udid = [line.split('\t')[0] for line in
                          os.popen("adb devices", 'r', 1).read().split('\n') if
                          len(line) != 0 and line.find('\tdevice') != -1][0]
             if self.udid == "":
-                self.logger.error("no available devices!")
+                print("no available devices!")
                 sys.exit(1)
-        
+
+                # 初始化Logger
+        self.logger = initLogger(loggerName="UIDump_%s" % self.pkgname,
+                                 outputPath=os.path.join(LOG_OUTPUT_PATH, "UIDump_%s.log" % self.pkgname),
+                                 udid=self.udid)
+
         # 初始化 uiautomator
         try:
             self.device = DeviceConnect(self.logger, self.udid)
         except Exception as e:
             self.runStatus = RunStatus.UI2_INIT_ERR
             return
-        
+
         # Monkey模式 设置计时器
         if self.monkeyMode:
             self.timer = Timer(logger=self.logger, duration=self.monkeyTime, device=self.device)
-        
+
         # APK_FILE不为空，表示需要从指定路径安装app
         if self.apkFilePath is not "":
             self.runStatus = self.device.installApk(self.pkgname, self.apkFilePath)
-        
+
         pass
 
     def __printUseMethod(self):

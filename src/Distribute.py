@@ -53,6 +53,8 @@ class Dispatch(pykka.ThreadingActor):
             if isNeedContinue(runStatus) or isNeedRestart(runStatus):
                 if self.errorAppList[returnWorker.pkgname]['restartCount'] < 3:
                     self.errorAppList[returnWorker.pkgname]['restartCount'] += 1
+                    self.logger.info("%s need restart install, the count = %d" % (
+                        returnWorker.pkgname, self.errorAppList[returnWorker.pkgname]['restartCount']))
                     self.appQueue.append({"pkgname": returnWorker.pkgname, "downloadpath": returnWorker.apkPath})
 
         else:
