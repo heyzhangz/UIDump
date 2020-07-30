@@ -164,6 +164,9 @@ class UIDump:
         try:
             self.device.startWatchers()
         except Exception:
+            import shutil
+            shutil.rmtree(outputpath)
+            self.logger.error("err in start watcher")
             return RunStatus.UI2_WATCHER_ERR
 
         if self.timer is None:
@@ -180,6 +183,9 @@ class UIDump:
         # 目前利用frida孵化进程有bug，用Monkey起
         self.runStatus = self.device.startApp(self.pkgname)
         if not isSuccess(self.runStatus):
+            import shutil
+            shutil.rmtree(outputpath)
+            self.logger.error("err in start app")
             return self.runStatus
 
         # ch.start_hook(os.path.join("OneForAllHook", "_agent.js"), str(self.udid))
@@ -192,6 +198,9 @@ class UIDump:
                             timeInterval=MONKEY_TIME_INTERVAL, outdir=outputpath)
             self.runStatus = monkey.startMonkey()
         if not isSuccess(self.runStatus):
+            import shutil
+            shutil.rmtree(outputpath)
+            self.logger.error("err in start monkey")
             return self.runStatus
 
         # 启动计时器
