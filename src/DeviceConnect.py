@@ -280,11 +280,18 @@ class DeviceConnect:
 
     def getRunningApps(self):
 
-        return self.device.app_list_running()
+        runAppList = None
+        try:
+            runAppList = self.device.app_list_running()
+        except Exception:
+            self.logger.warning("err in get run app list")
+
+        return runAppList
 
     def isAppRun(self, pkgname):
-
-        if pkgname in self.getRunningApps():
+    
+        runAppList = self.getRunningApps()
+        if runAppList is None or pkgname in runAppList:
             return True
 
         return False

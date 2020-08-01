@@ -159,7 +159,9 @@ class UIDump:
 
         # 初始化frida
         # ch = CallerHook(self.pkgname, outputpath)
-
+    
+        time.sleep(1)
+        
         # 设置回调事件
         try:
             self.device.startWatchers()
