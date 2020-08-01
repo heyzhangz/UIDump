@@ -70,7 +70,7 @@ class Monkey:
             output = subprocess.check_output(cmd_pid, timeout=5).decode()
         except Exception as e:
             self.logger.warning("err in find monkey process, maybe block in winserver! Reason: %s", e)
-            return False
+            return False, RunStatus.SUCCESS
 
         if output == '':
             self.logger.info("No monkey running")
@@ -78,9 +78,12 @@ class Monkey:
             # 全是坑 有shell 有root的
             pid = re.search('\\S+ +([0-9]+)', output).group(1)
             self.logger.info("kill the monkey process: %s" % pid)
-            subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
+            try:
+                subprocess.check_output("adb -s %s shell kill %s" % (self.udid, pid))
+            except Exception:
+                return False, RunStatus.MONKEY_ERR
             time.sleep(2)
-            
-            return True
-        
-        return False
+
+            return True, RunStatus.SUCCESS
+
+        return False, RunStatus.SUCCESS

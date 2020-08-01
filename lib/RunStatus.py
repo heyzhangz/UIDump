@@ -23,7 +23,7 @@ class RunStatus(Enum):
     # monkey 异常
     MONKEY_ERR = -21
 
-    ERROR = 999  # 其它异常
+    ERROR = -999  # 其它异常
 
     pass
 

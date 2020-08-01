@@ -31,7 +31,7 @@ class Dispatch(pykka.ThreadingActor):
                 worker.tell({'downloadpath': app['downloadpath'],
                              'pkgname': app['pkgname'],
                              'currentworker': self.actor_ref})
-                self.aliveWorkers.append(worker)
+                self.aliveWorkers.insert(0, worker)
             else:
                 self.logger.warning('Apps is less than workers')
                 break
@@ -51,7 +51,7 @@ class Dispatch(pykka.ThreadingActor):
                 self.errorAppList[returnWorker.pkgname] = {'lastErrStatus': runStatus.name, 'restartCount': 0}
 
             # 需要重新安装的APP
-            if isNeedContinue(runStatus) or isNeedRestart(runStatus):
+            if isNeedContinue(runStatus):
                 if self.errorAppList[returnWorker.pkgname]['restartCount'] < 3:
                     self.errorAppList[returnWorker.pkgname]['restartCount'] += 1
                     self.logger.info("%s need restart install, the count = %d" % (

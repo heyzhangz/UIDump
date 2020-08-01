@@ -213,8 +213,12 @@ class UIDump:
         while True:
             if not self.device.isAppRun(self.pkgname):
                 self.logger.info("app %s is not running " % self.pkgname)
-                if monkey is not None and monkey.stopMonkey():
-                    monkey = None
+                if monkey is not None:
+                    execStatus, self.runStatus = monkey.stopMonkey()
+                    if execStatus:
+                        monkey = None
+                    if not isSuccess(self.runStatus):
+                        break
                 # 如果app异常退出，且计时未结束重启app
                 # getAppInstallStatus 避免当前app因为apk问题导致反复重启
                 if not self.timer.isFinish() and self.device.getAppInstallStatus() and errRestartCount < 3:
@@ -255,8 +259,12 @@ class UIDump:
             dumpcount += 1
             time.sleep(self.dumpInterval)
             if self.timer.isFinish():
-                if monkey is not None and monkey.stopMonkey():
-                    monkey = None
+                if monkey is not None:
+                    execStatus, self.runStatus = monkey.stopMonkey()
+                    if execStatus:
+                        monkey = None
+                    if not isSuccess(self.runStatus):
+                        break
                 self.device.stopApp(self.pkgname)
                 self.device.pressHome()
 
@@ -264,8 +272,8 @@ class UIDump:
         time.sleep(5)
         
         if monkey is not None:
-            monkey.stopMonkey()
-        
+            _, self.runStatus = monkey.stopMonkey()
+
         if not self.device.getAppInstallStatus():
             import shutil
             shutil.rmtree(outputpath)
