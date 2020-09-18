@@ -176,7 +176,7 @@ class UIDump:
             stopcondition = self.device.getCurrentApp()
             while stopcondition is "":
                 stopcondition = self.device.getCurrentApp()
-            self.timer = Timer(stopcondition=stopcondition, device=self.device)
+            self.timer = Timer(stopcondition=stopcondition, device=self.device, logger=self.logger)
 
         self.device.pressHome()
         dumpcount = 1
