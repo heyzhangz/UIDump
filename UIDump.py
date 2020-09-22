@@ -221,7 +221,7 @@ class UIDump:
                         break
                 # 如果app异常退出，且计时未结束重启app
                 # getAppInstallStatus 避免当前app因为apk问题导致反复重启
-                if not self.timer.isFinish() and self.device.getAppInstallStatus() and errRestartCount < 3:
+                if self.monkeyMode and not self.timer.isFinish() and self.device.getAppInstallStatus() and errRestartCount < 3:
                     errRestartCount += 1
                     self.logger.warning("Abnormal termination in app running, restart, count = %d" % errRestartCount)
                     self.device.closeWatchers()
