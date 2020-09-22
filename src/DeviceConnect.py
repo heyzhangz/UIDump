@@ -8,6 +8,7 @@ import uiautomator2
 from GlobalConfig import SCREENSHOT_FILE_NAME, LAYOUT_FILE_NAME, UI_WATCHER_TIME_INTERVAL
 from lib.Common import deleteFile
 from lib.RunStatus import RunStatus
+import platform
 
 
 class DeviceConnect:
@@ -300,8 +301,13 @@ class DeviceConnect:
 
         startTime = time.strftime('%m-%d %H:%M:%S.000', time.localtime(int(startTime) - 5))
 
-        logCmd = ['adb', '-s', self.udid, 'logcat', '-t', startTime, '|',
-                  'grep', 'CODE-BEHAVIOR', '>', os.path.join(outputDir, "apiSeq.txt")]
+        sysType = platform.system()
+        if sysType == 'Windows':
+            logCmd = ['adb', '-s', self.udid, 'logcat', '-t', startTime, '|',
+                    'findstr', 'CODE-BEHAVIOR', '>', os.path.join(outputDir, "apiSeq.txt")]
+        else:
+            logCmd = ['adb', '-s', self.udid, 'logcat', '-t', startTime, '|',
+                    'grep', 'CODE-BEHAVIOR', '>', os.path.join(outputDir, "apiSeq.txt")]
         try:
             subprocess.check_output(logCmd, shell=True)
         except Exception as e:
