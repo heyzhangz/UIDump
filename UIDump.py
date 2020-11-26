@@ -164,7 +164,8 @@ class UIDump:
         
         # 设置回调事件
         try:
-            self.device.startWatchers()
+            # self.device.startWatchers()
+            pass
         except Exception:
             import shutil
             shutil.rmtree(outputpath)
