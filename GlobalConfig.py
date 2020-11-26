@@ -24,6 +24,7 @@ APP_LIST_PATH = os.path.join(BASE_PATH, "category_top_bak.json")  # app list 文
 # 信息收集模块配置
 SCREENSHOT_FILE_NAME = "screenshot.jpg"
 LAYOUT_FILE_NAME = "layout.xml"
+ACTIVITY_INFO_FILE_NAME = "activity_info.json"
 
 # Monkey配置
 MONKEY_WHITE_LIST_NAME = "monkey_pkg_whitelist.txt"

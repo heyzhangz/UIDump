@@ -5,10 +5,11 @@ import urllib.request
 
 import uiautomator2
 
-from GlobalConfig import SCREENSHOT_FILE_NAME, LAYOUT_FILE_NAME, UI_WATCHER_TIME_INTERVAL
+from GlobalConfig import SCREENSHOT_FILE_NAME, LAYOUT_FILE_NAME, UI_WATCHER_TIME_INTERVAL, ACTIVITY_INFO_FILE_NAME
 from lib.Common import deleteFile
 from lib.RunStatus import RunStatus
 import platform
+import json
 
 
 class DeviceConnect:
@@ -26,6 +27,9 @@ class DeviceConnect:
 
         self.appInstallStatus = True  # app安装状态
         self.dumpErrCount = 0
+        reratio = self.device.window_size()
+        self.screenw = reratio[0]
+        self.screenh = reratio[1]
 
         pass
 
@@ -42,6 +46,18 @@ class DeviceConnect:
         file.close()
         pass
 
+    def __saveActivityInfo(self, filepath):
+        # dump activity 和 屏幕分辨率信息
+        activityInfo = self.device.app_current()
+        activityInfo['width'] = self.screenw
+        activityInfo['height'] = self.screenh
+
+        file = open(filepath, 'w', encoding='utf-8')
+        file.write(json.dumps(activityInfo))
+        file.close()
+
+        pass
+
     def dumpUI(self, outputdir, dumpcount):
 
         timestamp = round(time.time() * 1000)
@@ -49,6 +65,7 @@ class DeviceConnect:
         os.makedirs(dirpath)
         screenshotpath = os.path.join(dirpath, SCREENSHOT_FILE_NAME)
         layoutxmlpath = os.path.join(dirpath, LAYOUT_FILE_NAME)
+        activitypath = os.path.join(dirpath, ACTIVITY_INFO_FILE_NAME)
 
         try:
             self.__saveScreenshot(screenshotpath)
@@ -62,6 +79,14 @@ class DeviceConnect:
             self.__saveLayoutXML(layoutxmlpath)
         except Exception as e:
             self.logger.error("err in save layout, Reason:%s" % e)
+            self.dumpErrCount += 1
+            if self.dumpErrCount >= 3:
+                return RunStatus.UI2_ERROR
+        
+        try:
+            self.__saveActivityInfo(activitypath)
+        except Exception as e:
+            self.logger.error("err in save activity info, Reason:%s" % e)
             self.dumpErrCount += 1
             if self.dumpErrCount >= 3:
                 return RunStatus.UI2_ERROR

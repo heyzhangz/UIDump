@@ -268,6 +268,7 @@ class UIDump:
                         break
                 self.device.stopApp(self.pkgname)
                 self.device.pressHome()
+                break
 
         self.device.closeWatchers()
         time.sleep(5)
