@@ -2,6 +2,7 @@ import os
 import subprocess
 import time
 import urllib.request
+import asyncio
 
 import uiautomator2
 
@@ -33,63 +34,103 @@ class DeviceConnect:
 
         pass
 
+    # async def __saveScreenshot(self, filepath):
     def __saveScreenshot(self, filepath):
 
-        self.device.screenshot(filepath)
+        # print("[DEBUG] save start %s in %s" % (filepath, time.time()))
+        imgcontent = self.device.screenshot()
+        # await asyncio.sleep(1)
+        imgcontent.save(filepath)
+        # print("[DEBUG] save end %s in %s" % (filepath, time.time()))
         pass
 
+    # async def __saveLayoutXML(self, filepath):
     def __saveLayoutXML(self, filepath):
-
+        
+        # print("[DEBUG] save start %s in %s" % (filepath, time.time()))
         xml = self.device.dump_hierarchy()
+        # await asyncio.sleep(1)
         file = open(filepath, 'w', encoding='utf-8')
         file.write(xml)
         file.close()
+        # print("[DEBUG] save end %s in %s" % (filepath, time.time()))
         pass
 
-    def __saveActivityInfo(self, filepath):
-        # dump activity 和 屏幕分辨率信息
-        activityInfo = self.device.app_current()
-        activityInfo['width'] = self.screenw
-        activityInfo['height'] = self.screenh
+    def __saveUIInfo(self, imgfilepath, xmlfilepath):
 
-        file = open(filepath, 'w', encoding='utf-8')
-        file.write(json.dumps(activityInfo))
+        xml = self.device.dump_hierarchy()
+        imgcontent = self.device.screenshot()
+
+        box = (0, 0, 1080, 1920)
+        imgcontent = imgcontent.crop(box)
+        imgcontent.save(imgfilepath)
+
+        file = open(xmlfilepath, 'w', encoding='utf-8')
+        file.write(xml)
         file.close()
 
         pass
+
+    # def __saveActivityInfo(self, filepath):
+    #     # dump activity 和 屏幕分辨率信息
+    #     activityInfo = self.device.app_current()
+    #     activityInfo['width'] = self.screenw
+    #     activityInfo['height'] = self.screenh
+
+    #     file = open(filepath, 'w', encoding='utf-8')
+    #     file.write(json.dumps(activityInfo))
+    #     file.close()
+
+    #     pass
 
     def dumpUI(self, outputdir, dumpcount):
 
         timestamp = round(time.time() * 1000)
-        dirpath = os.path.join(outputdir, "ui_%d_%d" % (dumpcount, timestamp))
-        os.makedirs(dirpath)
-        screenshotpath = os.path.join(dirpath, SCREENSHOT_FILE_NAME)
-        layoutxmlpath = os.path.join(dirpath, LAYOUT_FILE_NAME)
-        activitypath = os.path.join(dirpath, ACTIVITY_INFO_FILE_NAME)
+        # dirpath = os.path.join(outputdir, "ui_%d_%d" % (dumpcount, timestamp))
+        # os.makedirs(dirpath)
+        # screenshotpath = os.path.join(dirpath, SCREENSHOT_FILE_NAME)
+        # layoutxmlpath = os.path.join(dirpath, LAYOUT_FILE_NAME)
+        # activitypath = os.path.join(dirpath, ACTIVITY_INFO_FILE_NAME)
+        screenshotpath = os.path.join(outputdir, "%d_%d.jpg" % (dumpcount, timestamp))
+        layoutxmlpath = os.path.join(outputdir, "%d_%d.xml" % (dumpcount, timestamp))
 
         try:
-            self.__saveScreenshot(screenshotpath)
+            # loop = asyncio.get_event_loop()
+            # loop.run_until_complete(asyncio.wait([self.__saveLayoutXML(layoutxmlpath),
+            #                                       self.__saveScreenshot(screenshotpath)]))
+
+            self.__saveUIInfo(screenshotpath, layoutxmlpath)
+
+            # print("[DEBUG] all end in %s" % time.time())
         except Exception as e:
-            self.logger.error("err in save screenshot, Reason:%s" % e)
+            self.logger.error("err in save layout\screenshot, Reason:%s" % e)
             self.dumpErrCount += 1
             if self.dumpErrCount >= 3:
                 return RunStatus.UI2_ERROR
 
-        try:
-            self.__saveLayoutXML(layoutxmlpath)
-        except Exception as e:
-            self.logger.error("err in save layout, Reason:%s" % e)
-            self.dumpErrCount += 1
-            if self.dumpErrCount >= 3:
-                return RunStatus.UI2_ERROR
+        # try:
+        #     self.__saveLayoutXML(layoutxmlpath)
+        # except Exception as e:
+        #     self.logger.error("err in save layout, Reason:%s" % e)
+        #     self.dumpErrCount += 1
+        #     if self.dumpErrCount >= 3:
+        #         return RunStatus.UI2_ERROR
+
+        # try:
+        #     self.__saveScreenshot(screenshotpath)
+        # except Exception as e:
+        #     self.logger.error("err in save screenshot, Reason:%s" % e)
+        #     self.dumpErrCount += 1
+        #     if self.dumpErrCount >= 3:
+        #         return RunStatus.UI2_ERROR
         
-        try:
-            self.__saveActivityInfo(activitypath)
-        except Exception as e:
-            self.logger.error("err in save activity info, Reason:%s" % e)
-            self.dumpErrCount += 1
-            if self.dumpErrCount >= 3:
-                return RunStatus.UI2_ERROR
+        # try:
+        #     self.__saveActivityInfo(activitypath)
+        # except Exception as e:
+        #     self.logger.error("err in save activity info, Reason:%s" % e)
+        #     self.dumpErrCount += 1
+        #     if self.dumpErrCount >= 3:
+        #         return RunStatus.UI2_ERROR
 
         return RunStatus.SUCCESS
 

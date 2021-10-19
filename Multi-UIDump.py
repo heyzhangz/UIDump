@@ -30,12 +30,18 @@ class UIDumpTask:
                                  outputPath=os.path.join(LOG_OUTPUT_PATH, "Dispatch_UIDump_%s.log" %
                                                          time.strftime('%Y%m%d%H%M', time.localtime())))
         # json格式 按类别划分
-        resjson = readAPPList(APP_LIST_PATH)
-        for _, arr in resjson.items():
-            for apkpath in arr:
-                pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
-                newpath = 'http://10.141.209.139:8002/' + apkpath[6:]
-                self.apkList.append({"pkgname": pkgname, "apkpath": apkpath, "downloadpath": newpath})
+        # resjson = readAPPList(APP_LIST_PATH)
+        # for _, arr in resjson.items():
+        #     for apkpath in arr:
+        #         pkgname = re.search(r'(?:/top/)(.*)(?:/)', apkpath).group(1)
+        #         newpath = 'http://10.141.209.139:8002/' + apkpath[6:]
+        #         self.apkList.append({"pkgname": pkgname, "apkpath": apkpath, "downloadpath": newpath})
+
+        for root, _, files in os.walk(r"D:\Download\300apk"):
+            for apkfile in files:
+                pkgname = apkfile.split("-20")[0]
+                newpath = os.path.join(root, apkfile)
+                self.apkList.append({"pkgname": pkgname, "apkpath": newpath, "downloadpath": newpath})
 
         if udids is None or len(udids) == 0:
             self.udids = [line.split('\t')[0] for line in
